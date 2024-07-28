@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"cs-server-controller/context_values"
+	"cs-server-controller/httpex/errorwrp"
+	"cs-server-controller/middleware"
 	"net/http"
 )
 
@@ -10,16 +11,15 @@ type StatusResponse struct {
 	SteamCmdRunning bool `json:"steamcmd-running"`
 }
 
-func StatusHandler(w http.ResponseWriter, r *http.Request) {
-	_, server, steamcmd, err := context_values.GetSteamcmdAndServerInstance(r.Context())
+func StatusHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
+	_, server, steamcmd, err := middleware.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "internal error", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
-	response := StatusResponse{
+	resp := StatusResponse{
 		ServerRunning:   server.IsRunning(),
 		SteamCmdRunning: steamcmd.IsRunning(),
 	}
-	WriteJson(w, response, http.StatusOK)
+	return errorwrp.NewJsonHttpResponse(http.StatusOK, resp)
 }

@@ -1,38 +1,43 @@
 package handlers
 
 import (
-	"cs-server-controller/context_values"
+	"cs-server-controller/config"
+	"cs-server-controller/httpex/errorwrp"
 	json_file "cs-server-controller/jsonfile"
+	"cs-server-controller/middleware"
 	"cs-server-controller/server"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func StartHandler(w http.ResponseWriter, r *http.Request) {
-	lock, s, steamcmd, err := context_values.GetSteamcmdAndServerInstance(r.Context())
+func StartHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
+	lock, s, steamcmd, err := middleware.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "internal error", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	if steamcmd.IsRunning() {
-		http.Error(w, "steamcmd is running", http.StatusInternalServerError)
-		return
+		return errorwrp.NewHttpErrorInternalServerError2("steamcmd is running")
 	}
 
 	if s.IsRunning() {
-		http.Error(w, "server is already running", http.StatusInternalServerError)
-		return
+		return errorwrp.NewHttpErrorInternalServerError2("server is already running")
 	}
 
 	q := r.URL.Query()
 
-	//startParametersJsonPath := "/home/desk/programming/code/go/data/cs-server-controller/start-parameters.json"
-	startParametersJsonPath := "..\\start-parameters.json"
+	config, ok := r.Context().Value(middleware.ConfigKey).(config.Config)
+	if !ok {
+		return errorwrp.NewHttpErrorInternalServerError("internal error", errors.New("failed to get config from context"))
+	}
+
+	startParametersJsonPath := filepath.Join(config.DataDir, "start-parameters.json")
 	startParameters, err := getStarParameters(startParametersJsonPath, q)
 	if err != nil {
 		slog.Debug("failed to read json file. Using default start parameters", "path", startParametersJsonPath)
@@ -43,8 +48,7 @@ func StartHandler(w http.ResponseWriter, r *http.Request) {
 	defer lock.Unlock()
 
 	if err := s.Start(*startParameters); err != nil {
-		http.Error(w, "failed to start server", http.StatusInternalServerError)
-		return
+		return errorwrp.NewHttpErrorInternalServerError("failed to start server", err)
 	}
 
 	startParametersJsonFileInstance, err := json_file.Get[server.StartParameters](startParametersJsonPath)
@@ -55,6 +59,8 @@ func StartHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		slog.Warn("failed to get instance of start parameters json file")
 	}
+
+	return errorwrp.NewOkHttpResponse()
 }
 
 func getStarParameters(startParametersJsonPath string, query url.Values) (*server.StartParameters, error) {

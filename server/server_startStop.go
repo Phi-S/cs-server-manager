@@ -24,6 +24,9 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 
 	s.startStopLock.Lock()
 	defer s.startStopLock.Unlock()
+	s.commandLock.Lock()
+	defer s.commandLock.Unlock()
+
 	s.running.Store(true)
 	s.onServerStarting.Trigger()
 
@@ -69,10 +72,8 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 	}
 	slog.Debug("server process started")
 
-	s.cmdLock.Lock()
 	s.cmd = cmd
 	s.writer = inW
-	s.cmdLock.Unlock()
 
 	go s.checkIfServerIsRunning(cmd)
 	go s.flushServerOutput(inW)
@@ -111,7 +112,6 @@ func (s *ServerInstance) flushServerOutput(writer *io.PipeWriter) {
 			break
 		}
 
-		s.cmdLock.Lock()
 		if writer == nil {
 			break
 		}
@@ -119,9 +119,7 @@ func (s *ServerInstance) flushServerOutput(writer *io.PipeWriter) {
 		if _, err := writer.Write([]byte("\n")); err != nil {
 			break
 		}
-		s.cmdLock.Unlock()
 		time.Sleep(time.Millisecond * 500)
-
 	}
 	slog.Info("server output flush task stopped")
 }
@@ -181,7 +179,7 @@ func (s *ServerInstance) waitForServerToStart(write *io.PipeWriter, timeout time
 
 func (s *ServerInstance) Stop() error {
 	if !s.IsRunning() {
-		return nil
+		return errors.New("server is not running")
 	}
 
 	slog.Debug("stopping server")
@@ -191,9 +189,7 @@ func (s *ServerInstance) Stop() error {
 	s.stop.Store(true)
 
 	if err := s.writeCommand("quit"); err != nil {
-		s.cmdLock.Lock()
 		if s.cmd == nil {
-			s.cmdLock.Unlock()
 			return errors.New("quit command failed but process is not running")
 		}
 
@@ -203,7 +199,6 @@ func (s *ServerInstance) Stop() error {
 			s.cmd.Process.Kill()
 			s.cmd.Process.Release()
 		}
-		s.cmdLock.Unlock()
 	}
 
 	const timeout = time.Second * 15

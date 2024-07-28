@@ -32,7 +32,6 @@ type SteamcmdInstance struct {
 	cmd *exec.Cmd
 
 	startStopLock sync.Mutex
-	cmdLock       sync.Mutex
 
 	onOutput    event.EventWithData[string]
 	onStarted   event.Event
@@ -64,20 +63,20 @@ func NewInstance(steamcmdDir, serverDir string, enableEventLogging bool) (*Steam
 	}
 
 	i.onFailed.Register(func(pwd event.PayloadWithData[error]) {
-		i.cleanup()
+		i.Close()
 		i.running.Store(false)
 		i.lastLine.Store("")
 	})
 
 	i.onCancelled.Register(func(dp event.DefaultPayload) {
-		i.cleanup()
+		i.Close()
 		i.lastLine.Store("")
 		i.running.Store(false)
 		i.canceled.Store(false)
 	})
 
 	i.onFinished.Register(func(dp event.DefaultPayload) {
-		i.cleanup()
+		i.Close()
 		i.lastLine.Store("")
 		i.running.Store(false)
 	})
@@ -104,7 +103,7 @@ func (s *SteamcmdInstance) enableEventLogging() {
 	})
 
 	s.onCancelled.Register(func(dp event.DefaultPayload) {
-		slog.Debug("onStarted", "triggeredAtUtc", dp.TriggeredAtUtc)
+		slog.Debug("onCancelled", "triggeredAtUtc", dp.TriggeredAtUtc)
 	})
 
 	s.onFailed.Register(func(pwd event.PayloadWithData[error]) {
@@ -112,10 +111,7 @@ func (s *SteamcmdInstance) enableEventLogging() {
 	})
 }
 
-func (s *SteamcmdInstance) cleanup() {
-	s.cmdLock.Lock()
-	defer s.cmdLock.Unlock()
-
+func (s *SteamcmdInstance) Close() {
 	if s.pty != nil {
 		s.pty.Close()
 	}
@@ -229,7 +225,7 @@ func (s *SteamcmdInstance) readOutput(f *os.File) {
 		s.lastLine.Store(lastLine)
 	}
 
-	slog.Debug("read output exited. " + scanner.Err().Error())
+	slog.Debug("read output exited")
 }
 
 func (s *SteamcmdInstance) Cancel() error {
@@ -239,7 +235,9 @@ func (s *SteamcmdInstance) Cancel() error {
 
 	s.startStopLock.Lock()
 	defer s.startStopLock.Unlock()
-	s.cleanup()
+	s.canceled.Store(true)
+	defer s.canceled.Store(false)
+	s.Close()
 
 	timeout := time.Second * 5
 	startTime := time.Now()

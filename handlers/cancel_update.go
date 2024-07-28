@@ -1,19 +1,24 @@
 package handlers
 
 import (
-	"cs-server-controller/context_values"
+	"cs-server-controller/httpex/errorwrp"
+	"cs-server-controller/middleware"
 	"net/http"
 )
 
-func CancelUpdateHandler(w http.ResponseWriter, r *http.Request) {
-	_, _, steamcmdInstance, err := context_values.GetSteamcmdAndServerInstance(r.Context())
+func CancelUpdateHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
+	_, _, steamcmdInstance, err := middleware.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "internal error", "")
-		return
+		return errorwrp.NewHttpError(http.StatusInternalServerError, "internal error", err)
+	}
+
+	if !steamcmdInstance.IsRunning() {
+		return errorwrp.NewHttpErrorInternalServerError2("nothing to cancel. steamcmd is not running")
 	}
 
 	if err := steamcmdInstance.Cancel(); err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "failed to cancel server update", "")
-		return
+		return errorwrp.NewHttpError(http.StatusInternalServerError, "failed to cancel server update", err)
 	}
+
+	return errorwrp.NewOkHttpResponse()
 }

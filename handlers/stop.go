@@ -1,20 +1,24 @@
 package handlers
 
 import (
-	"cs-server-controller/context_values"
+	"cs-server-controller/httpex/errorwrp"
+	"cs-server-controller/middleware"
 	"net/http"
 )
 
-func StopHandler(w http.ResponseWriter, r *http.Request) {
-	_, server, _, err := context_values.GetSteamcmdAndServerInstance(r.Context())
+func StopHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
+	_, server, _, err := middleware.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "internal error", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+	}
+
+	if !server.IsRunning() {
+		return errorwrp.NewHttpErrorInternalServerError2("nothing to stop. server is not running")
 	}
 
 	if err := server.Stop(); err != nil {
-		WriteProblemDetail2(w, 551, "failed to stop server", "")
-		http.Error(w, "failed to stop server", http.StatusInternalServerError)
-		return
+		return errorwrp.NewHttpErrorInternalServerError("failed to stop server", err)
 	}
+
+	return errorwrp.NewOkHttpResponse()
 }

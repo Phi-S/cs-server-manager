@@ -1,34 +1,31 @@
 package handlers
 
 import (
-	"cs-server-controller/context_values"
+	"cs-server-controller/httpex/errorwrp"
+	"cs-server-controller/middleware"
 	"net/http"
 )
 
-func UpdateHandler(w http.ResponseWriter, r *http.Request) {
-	lock, serverInstance, steamcmdInstance, err := context_values.GetSteamcmdAndServerInstance(r.Context())
+func UpdateHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
+	lock, serverInstance, steamcmdInstance, err := middleware.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "internal error", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	lock.Lock()
 	defer lock.Unlock()
 
 	if steamcmdInstance.IsRunning() {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "another update is already running", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError2("update is already running")
 	}
 
 	if serverInstance.IsRunning() {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "cant update server. Server is running", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError2("can not update server. server is still running")
 	}
 
 	if err := steamcmdInstance.Update(false); err != nil {
-		WriteProblemDetail2(w, http.StatusInternalServerError, "failed update server", "")
-		return
+		return errorwrp.NewHttpErrorInternalServerError("failed to update server", err)
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	return errorwrp.NewHttpResponse(http.StatusAccepted)
 }

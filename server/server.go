@@ -27,7 +27,6 @@ type ServerInstance struct {
 	writer *io.PipeWriter
 
 	startStopLock sync.Mutex
-	cmdLock       sync.Mutex
 	commandLock   sync.Mutex
 
 	onOutput         event.EventWithData[string]
@@ -64,13 +63,13 @@ func NewInstance(serverDir, port string, enableEventLogging bool) (*ServerInstan
 	}
 
 	i.onServerCrashed.Register(func(pwd event.PayloadWithData[error]) {
-		i.cleanup()
+		i.Close()
 		i.running.Store(false)
 		i.stop.Store(false)
 	})
 
 	i.onServerStopped.Register(func(dp event.DefaultPayload) {
-		i.cleanup()
+		i.Close()
 		i.running.Store(false)
 		i.stop.Store(false)
 	})
@@ -83,10 +82,7 @@ func (s *ServerInstance) IsRunning() bool {
 	return s.running.Load()
 }
 
-func (s *ServerInstance) cleanup() {
-	s.cmdLock.Lock()
-	defer s.cmdLock.Unlock()
-
+func (s *ServerInstance) Close() {
 	if s.cmd != nil {
 		if s.cmd.Process != nil {
 			s.cmd.Process.Kill()
@@ -123,5 +119,4 @@ func (s *ServerInstance) enableEventLogging() {
 	s.onServerStopped.Register(func(dp event.DefaultPayload) {
 		slog.Debug("onServerStopped", "triggeredAtUtc", dp.TriggeredAtUtc)
 	})
-
 }
