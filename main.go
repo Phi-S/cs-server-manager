@@ -2,13 +2,12 @@ package main
 
 import (
 	"cs-server-controller/config"
-	"cs-server-controller/event"
 	"cs-server-controller/handlers"
 	"cs-server-controller/httpex/errorwrp"
+	"cs-server-controller/logwrt"
 	"cs-server-controller/middleware"
 	"cs-server-controller/server"
 	"cs-server-controller/steamcmd"
-	"cs-server-controller/user_logs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,6 +18,7 @@ import (
 
 func main() {
 	configureLogger()
+
 	config, err := config.GetConfig()
 	if err != nil {
 		slog.Error(err.Error())
@@ -60,18 +60,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	userLogsWriter, err := user_logs.NewLogWriter(logDir, "user-logs")
+	userLogsWriter, err := logwrt.NewLogWriter(logDir, "user-logs")
 	if err != nil {
 		slog.Error("failed to create user logs write", "error", err)
 		os.Exit(1)
 	}
 	defer userLogsWriter.Close()
 
-	logServerEvents(userLogsWriter, serverInstance)
-	logSteamcmdEvents(userLogsWriter, steamcmdInstance)
+	writeEventsTpUserLogFile(userLogsWriter, serverInstance, steamcmdInstance)
+
+	// api
 
 	main := http.NewServeMux()
-
 	v1 := http.NewServeMux()
 
 	errorwrp.GET(v1, "/status", handlers.StatusHandler)
@@ -83,7 +83,10 @@ func main() {
 	errorwrp.POST(v1, "/update", handlers.UpdateHandler)
 	errorwrp.POST(v1, "/cancel-update", handlers.CancelUpdateHandler)
 
-	errorwrp.GET(v1, "/logs", handlers.LogHandler)
+	errorwrp.GET(v1, "/logs", handlers.LogsHandler)
+	errorwrp.GET(v1, "/logs-since", handlers.LogsSinceHandler)
+	errorwrp.GET(v1, "/log-files", handlers.LogFilesHandler)
+	errorwrp.GET(v1, "/log-file", handlers.LogFileContentHandler)
 
 	main.Handle("/v1/", middleware.ContextValues(
 		http.StripPrefix("/v1", v1),
@@ -120,49 +123,4 @@ func configureLogger() {
 
 	logger := slog.New(logHandler)
 	slog.SetDefault(logger)
-}
-
-func logServerEvents(w *user_logs.LogWriter, s *server.ServerInstance) {
-	s.OnServerStarting(func(dp event.DefaultPayload) {
-		w.WriteSystemInfoLog(dp.TriggeredAtUtc, "server starting")
-	})
-
-	s.OnServerStarted(func(dp event.DefaultPayload) {
-		w.WriteSystemInfoLog(dp.TriggeredAtUtc, "server started")
-	})
-
-	s.OnServerStopped(func(dp event.DefaultPayload) {
-		w.WriteSystemInfoLog(dp.TriggeredAtUtc, "server stopped")
-	})
-
-	s.OnServerCrashed(func(dp event.PayloadWithData[error]) {
-		w.WriteSystemErrorLog(dp.TriggeredAtUtc, "server crashed")
-	})
-
-	s.OnOutput(func(dp event.PayloadWithData[string]) {
-		w.WriteServerLog(dp.TriggeredAtUtc, dp.Data)
-	})
-}
-
-func logSteamcmdEvents(w *user_logs.LogWriter, s *steamcmd.SteamcmdInstance) {
-	s.OnStarted(func(dp event.DefaultPayload) {
-		w.WriteSystemInfoLog(dp.TriggeredAtUtc, "steamcmd update starting")
-	})
-
-	s.OnFinished(func(dp event.DefaultPayload) {
-		w.WriteSystemInfoLog(dp.TriggeredAtUtc, "steamcmd update finished")
-	})
-
-	s.OnCancelled(func(dp event.DefaultPayload) {
-		w.WriteSystemInfoLog(dp.TriggeredAtUtc, "steamcmd update cancelled")
-	})
-
-	s.OnFailed(func(dp event.PayloadWithData[error]) {
-		w.WriteSystemErrorLog(dp.TriggeredAtUtc, "steamcmd update failed")
-	})
-
-	s.OnOutput(func(dp event.PayloadWithData[string]) {
-		w.WriteSteamcmdLog(dp.TriggeredAtUtc, dp.Data)
-	})
-
 }

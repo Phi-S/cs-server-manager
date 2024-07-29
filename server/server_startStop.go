@@ -14,6 +14,20 @@ import (
 	"time"
 )
 
+
+func (s *ServerInstance) waitForServerToExit(onExitedChannel chan error) {
+	slog.Error(" ============================================ waiting for channel to close")
+	err := <-onExitedChannel
+	slog.Error(" ============================================ channel closed")
+
+
+
+	s.Close()
+	s.running.Store(false)
+	s.stop.Store(false)
+	slog.Debug("server exited. all resources cleared")
+}
+
 func (s *ServerInstance) Start(sp StartParameters) error {
 	spJson, _ := json.Marshal(sp)
 	slog.Debug("trying to start server with start parameters " + string(spJson))
@@ -29,6 +43,8 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 
 	s.running.Store(true)
 	s.onServerStarting.Trigger()
+	onExitedChan := make(chan error)
+	go s.waitForServerToExit(onExitedChan)
 
 	password := strings.TrimSpace(sp.Password)
 	if len([]rune(password)) == 0 {
@@ -68,6 +84,7 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 	if err := cmd.Start(); err != nil {
 		slog.Debug("failed to start server process. " + err.Error())
 		s.onServerCrashed.Trigger(err)
+		onExitedChan <- err
 		return err
 	}
 	slog.Debug("server process started")
@@ -75,6 +92,11 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 	s.cmd = cmd
 	s.writer = inW
 
+	go func ()  {
+		err := cmd.Wait()
+		onExitedChan <- err
+	}()
+	
 	go s.checkIfServerIsRunning(cmd)
 	go s.flushServerOutput(inW)
 	go s.readServerOutput(outR)
@@ -82,6 +104,7 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 	if err := s.waitForServerToStart(inW, time.Millisecond*30_000); err != nil {
 		slog.Debug("failed to wait for server to start. " + err.Error())
 		s.onServerCrashed.Trigger(err)
+		onExitedChan <- err
 		return err
 	}
 
@@ -92,6 +115,7 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 
 func (s *ServerInstance) checkIfServerIsRunning(cmd *exec.Cmd) {
 	err := cmd.Wait()
+	
 
 	if s.stop.Load() {
 		s.onServerStopped.Trigger()
@@ -103,6 +127,7 @@ func (s *ServerInstance) checkIfServerIsRunning(cmd *exec.Cmd) {
 		}
 	}
 
+	onExitedChan <- true
 	slog.Debug("check if server is running exited")
 }
 

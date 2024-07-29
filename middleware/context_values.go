@@ -3,18 +3,22 @@ package middleware
 import (
 	"context"
 	"cs-server-controller/config"
+	"cs-server-controller/logwrt"
 	"cs-server-controller/server"
 	"cs-server-controller/steamcmd"
-	"cs-server-controller/user_logs"
 	"errors"
-	"log/slog"
 	"net/http"
 	"sync"
-
-	"github.com/google/uuid"
 )
 
-func ContextValues(h http.Handler, cfg config.Config, serverSteamcmdLock *sync.Mutex, serverInstance *server.ServerInstance, steamcmdInstance *steamcmd.SteamcmdInstance, userLogWriter *user_logs.LogWriter) http.Handler {
+func ContextValues(
+	h http.Handler,
+	cfg config.Config,
+	serverSteamcmdLock *sync.Mutex,
+	serverInstance *server.ServerInstance,
+	steamcmdInstance *steamcmd.SteamcmdInstance,
+	userLogWriter *logwrt.LogWriter,
+) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, ConfigKey, cfg)
@@ -22,14 +26,6 @@ func ContextValues(h http.Handler, cfg config.Config, serverSteamcmdLock *sync.M
 		ctx = context.WithValue(ctx, ServerInstanceKey, serverInstance)
 		ctx = context.WithValue(ctx, SteamCmdInstanceKey, steamcmdInstance)
 		ctx = context.WithValue(ctx, UserLogWriterKey, userLogWriter)
-		h.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func TraceId(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, TraceIdKey, uuid.NewString())
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -73,15 +69,4 @@ func GetSteamcmdAndServerInstance(ctx context.Context) (*sync.Mutex, *server.Ser
 	}
 
 	return lock, server, steamcmd, nil
-}
-
-// / Return the trace id or an empty string
-// / If trace id is not present, an error will be printed
-func GetTraceId(ctx context.Context) string {
-	traceId, ok := ctx.Value(TraceIdKey).(string)
-	if traceId == "" || !ok {
-		slog.Warn("failed to get traceId from context")
-	}
-
-	return traceId
 }

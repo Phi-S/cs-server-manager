@@ -1,1 +1,1 @@
-- use request id 
+- events with go routine + chan in server and steamcmd

@@ -78,6 +78,7 @@ func NewInstance(serverDir, port string, enableEventLogging bool) (*ServerInstan
 	return &i, nil
 }
 
+
 func (s *ServerInstance) IsRunning() bool {
 	return s.running.Load()
 }

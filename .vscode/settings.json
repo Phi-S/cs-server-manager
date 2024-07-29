@@ -2,11 +2,14 @@
     "cSpell.words": [
         "asaskevich",
         "creack",
+        "errorwrp",
         "godotenv",
         "govalidator",
+        "httpex",
         "httprouter",
         "julienschmidt",
         "linuxsteamrt",
+        "logwrt",
         "maxplayers",
         "mutext",
         "steamcmd"

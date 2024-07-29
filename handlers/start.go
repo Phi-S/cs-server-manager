@@ -94,7 +94,7 @@ func getStarParameters(startParametersJsonPath string, query url.Values) (*serve
 		}
 
 		if maxPlayersUint64 > 255 {
-			return nil, fmt.Errorf("maxPlayers parameter must be a valid number between 1 and 255", http.StatusBadRequest)
+			return nil, fmt.Errorf("maxPlayers parameter must be a valid number between 1 and 255")
 		}
 
 		startParameters.MaxPlayers = uint8(maxPlayersUint64)
