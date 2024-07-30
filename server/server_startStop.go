@@ -19,11 +19,11 @@ func (s *Instance) waitForServerToExit(onExitedChannel chan error) {
     slog.Error(" ============================================ channel closed")
 
     if s.stop.Load() {
-        s.onServerStopped.Trigger()
+        s.onStopped.Trigger()
     } else if err != nil {
-        s.onServerCrashed.Trigger(fmt.Errorf("server exited unexpectedly. %v", err))
+        s.onCrashed.Trigger(fmt.Errorf("server exited unexpectedly. %v", err))
     } else {
-        s.onServerCrashed.Trigger(fmt.Errorf("server exited unexpectedly"))
+        s.onCrashed.Trigger(fmt.Errorf("server exited unexpectedly"))
     }
 
     s.Close()
@@ -46,7 +46,7 @@ func (s *Instance) Start(sp StartParameters) error {
     onExitedChan := make(chan error)
     go s.waitForServerToExit(onExitedChan)
     s.running.Store(true)
-    s.onServerStarting.Trigger()
+    s.onStarting.Trigger()
 
     password := strings.TrimSpace(sp.Password)
     if len([]rune(password)) == 0 {
@@ -108,7 +108,7 @@ func (s *Instance) Start(sp StartParameters) error {
         return err
     }
 
-    s.onServerStarted.Trigger()
+    s.onStarted.Trigger()
     slog.Info("server started")
     return nil
 }

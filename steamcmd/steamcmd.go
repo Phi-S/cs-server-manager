@@ -40,7 +40,7 @@ type Instance struct {
     onFailed    event.InstanceWithData[error]
 }
 
-func NewInstance(steamcmdDir, serverDir string, enableEventLogging bool) (*Instance, error) {
+func NewInstance(steamcmdDir, serverDir string) (*Instance, error) {
     if instanceCreated {
         return nil, errors.New("another instance already exists. Use only one instance throughout the program")
     }
@@ -81,34 +81,8 @@ func NewInstance(steamcmdDir, serverDir string, enableEventLogging bool) (*Insta
         i.running.Store(false)
     })
 
-    if enableEventLogging {
-        i.enableEventLogging()
-    }
-
     instanceCreated = true
     return &i, nil
-}
-
-func (s *Instance) enableEventLogging() {
-    s.onOutput.Register(func(pwd event.PayloadWithData[string]) {
-        fmt.Println(pwd.TriggeredAtUtc.String() + " | steamcmd: " + pwd.Data)
-    })
-
-    s.onStarted.Register(func(dp event.DefaultPayload) {
-        slog.Debug("onStarted", "triggeredAtUtc", dp.TriggeredAtUtc)
-    })
-
-    s.onFinished.Register(func(dp event.DefaultPayload) {
-        slog.Debug("onFinished", "triggeredAtUtc", dp.TriggeredAtUtc)
-    })
-
-    s.onCancelled.Register(func(dp event.DefaultPayload) {
-        slog.Debug("onCancelled", "triggeredAtUtc", dp.TriggeredAtUtc)
-    })
-
-    s.onFailed.Register(func(pwd event.PayloadWithData[error]) {
-        slog.Debug("onFailed", "triggeredAtUtc", pwd.TriggeredAtUtc, "data", pwd.Data)
-    })
 }
 
 func (s *Instance) Close() {
@@ -142,7 +116,7 @@ func (s *Instance) Update(force bool) error {
     s.onStarted.Trigger()
 
     if force {
-        os.RemoveAll(s.steamCmdDir)
+        _ = os.RemoveAll(s.steamCmdDir)
     }
 
     if !IsSteamCmdInstalled(s.steamCmdDir) {

@@ -5,11 +5,9 @@ import (
     "errors"
     "fmt"
     "io"
-    "log/slog"
     "os/exec"
     "sync"
     "sync/atomic"
-    "time"
 
     "github.com/asaskevich/govalidator"
 )
@@ -31,14 +29,14 @@ type Instance struct {
     startStopLock sync.Mutex
     commandLock   sync.Mutex
 
-    onOutput         event.InstanceWithData[string]
-    onServerStarting event.Instance
-    onServerStarted  event.Instance
-    onServerStopped  event.Instance
-    onServerCrashed  event.InstanceWithData[error]
+    onOutput   event.InstanceWithData[string]
+    onStarting event.Instance
+    onStarted  event.Instance
+    onStopped  event.Instance
+    onCrashed  event.InstanceWithData[error]
 }
 
-func NewInstance(serverDir, port string, enableEventLogging bool) (*Instance, error) {
+func NewInstance(serverDir, port string) (*Instance, error) {
     if instanceCreated {
         return nil, errors.New("another instance already exists. Only one instance should be used throughout the program")
     }
@@ -60,17 +58,13 @@ func NewInstance(serverDir, port string, enableEventLogging bool) (*Instance, er
         port:      port,
     }
 
-    if enableEventLogging {
-        i.enableEventLogging()
-    }
-
-    i.onServerCrashed.Register(func(pwd event.PayloadWithData[error]) {
+    i.onCrashed.Register(func(pwd event.PayloadWithData[error]) {
         i.Close()
         i.running.Store(false)
         i.stop.Store(false)
     })
 
-    i.onServerStopped.Register(func(dp event.DefaultPayload) {
+    i.onStopped.Register(func(dp event.DefaultPayload) {
         i.Close()
         i.running.Store(false)
         i.stop.Store(false)
@@ -103,27 +97,4 @@ func (s *Instance) Close() {
         _ = s.reader.Close()
         s.reader = nil
     }
-}
-
-func (s *Instance) enableEventLogging() {
-    s.onOutput.Register(func(pwd event.PayloadWithData[string]) {
-        //slog.Debug("EVENT TRIGGERED", "event", pwd.EventName, "triggeredAtUtc", pwd.TriggeredAtUtc, "data", pwd.Data)
-        fmt.Println(pwd.TriggeredAtUtc.Format(time.RFC3339Nano) + " | SERVER: " + pwd.Data)
-    })
-
-    s.onServerStarting.Register(func(dp event.DefaultPayload) {
-        slog.Debug("onServerStarting", "triggeredAtUtc", dp.TriggeredAtUtc)
-    })
-
-    s.onServerStarted.Register(func(dp event.DefaultPayload) {
-        slog.Debug("onServerStarted", "triggeredAtUtc", dp.TriggeredAtUtc)
-    })
-
-    s.onServerCrashed.Register(func(pwd event.PayloadWithData[error]) {
-        slog.Debug("onServerCrashed", "triggeredAtUtc", pwd.TriggeredAtUtc, "data", pwd.Data)
-    })
-
-    s.onServerStopped.Register(func(dp event.DefaultPayload) {
-        slog.Debug("onServerStopped", "triggeredAtUtc", dp.TriggeredAtUtc)
-    })
 }

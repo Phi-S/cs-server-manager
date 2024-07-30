@@ -2,6 +2,7 @@ package config
 
 import (
     "fmt"
+    "log/slog"
     "os"
     "path/filepath"
     "strings"
@@ -56,6 +57,7 @@ func GetConfig() (Config, error) {
     if !govalidator.IsPort(httpPort) {
         return Config{}, fmt.Errorf("%q with the value %q is not a valid PORT", httpPortKey, httpPort)
     }
+    slog.Info("config", httpPortKey, httpPort)
 
     const csPortKey = "CS_PORT"
     csPort, err := GetRequiredValueFromEnv(csPortKey)
@@ -65,6 +67,7 @@ func GetConfig() (Config, error) {
     if !govalidator.IsPort(csPort) {
         return Config{}, fmt.Errorf("%q with the value %q is not a valid PORT", csPortKey, csPort)
     }
+    slog.Info("config", csPortKey, csPort)
 
     const dataDirKey = "DATA_DIR"
     dataDir, err := GetRequiredValueFromEnv(dataDirKey)
@@ -74,15 +77,19 @@ func GetConfig() (Config, error) {
     if ok, _ := govalidator.IsFilePath(dataDir); !ok {
         return Config{}, fmt.Errorf("%q with the value %q is not a valid filepath", dataDirKey, dataDir)
     }
+    slog.Info("config", dataDirKey, dataDir)
 
     const logDirKey = "LOG_DIR"
     logDir := GetOptionalValueFromEnv(logDirKey, filepath.Join(dataDir, "logs"))
+    slog.Info("config", logDirKey, logDir)
 
     const serverDirKey = "SERVER_DIR"
     serverDir := GetOptionalValueFromEnv(serverDirKey, filepath.Join(dataDir, "server"))
+    slog.Info("config", serverDirKey, serverDir)
 
     const steamcmdDirKey = "STEAMCMD_DIR"
     steamcmdDir := GetOptionalValueFromEnv(steamcmdDirKey, filepath.Join(dataDir, "steamcmd"))
+    slog.Info("config", steamcmdDirKey, steamcmdDir)
 
     return Config{
         httpPort,

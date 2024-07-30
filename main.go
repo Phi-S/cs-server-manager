@@ -37,7 +37,7 @@ func main() {
     // This can occur if two http request are coming in at the same time
     ServerSteamcmdLock := sync.Mutex{}
 
-    steamcmdInstance, err := steamcmd.NewInstance(cfg.SteamcmdDir, cfg.ServerDir, true)
+    steamcmdInstance, err := steamcmd.NewInstance(cfg.SteamcmdDir, cfg.ServerDir)
     if err != nil {
         slog.Error("failed to create new steamcmd instance", "error", err)
         os.Exit(1)
@@ -47,7 +47,7 @@ func main() {
         steamcmdInstance.Close()
     }()
 
-    serverInstance, err := server.NewInstance(cfg.ServerDir, cfg.CsPort, true)
+    serverInstance, err := server.NewInstance(cfg.ServerDir, cfg.CsPort)
     if err != nil {
         slog.Error("failed to create new server instance", "error", err)
         os.Exit(1)
@@ -66,6 +66,7 @@ func main() {
     defer userLogWriter.Close()
 
     writeEventsTpUserLogFile(userLogWriter, serverInstance, steamcmdInstance)
+    enableEventLogging(serverInstance, steamcmdInstance)
 
     // api
     main := http.NewServeMux()

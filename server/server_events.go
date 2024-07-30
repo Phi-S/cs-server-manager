@@ -6,17 +6,17 @@ func (s *Instance) OnOutput(handler func(event.PayloadWithData[string])) {
     s.onOutput.Register(handler)
 }
 
-func (s *Instance) OnServerStarting(handler func(event.DefaultPayload)) {
-    s.onServerStarting.Register(handler)
+func (s *Instance) OnStarting(handler func(event.DefaultPayload)) {
+    s.onStarting.Register(handler)
 }
 
-func (s *Instance) OnServerStarted(handler func(event.DefaultPayload)) {
-    s.onServerStarted.Register(handler)
+func (s *Instance) OnStarted(handler func(event.DefaultPayload)) {
+    s.onStarted.Register(handler)
 }
 
-func (s *Instance) OnServerStopped(handler func(event.DefaultPayload)) {
-    s.onServerStopped.Register(handler)
+func (s *Instance) OnStopped(handler func(event.DefaultPayload)) {
+    s.onStopped.Register(handler)
 }
-func (s *Instance) OnServerCrashed(handler func(event.PayloadWithData[error])) {
-    s.onServerCrashed.Register(handler)
+func (s *Instance) OnCrashed(handler func(event.PayloadWithData[error])) {
+    s.onCrashed.Register(handler)
 }
