@@ -1,13 +1,13 @@
 package ctxex
 
 import (
-	"context"
-	"cs-server-controller/config"
-	"cs-server-controller/logwrt"
-	"cs-server-controller/server"
-	"cs-server-controller/steamcmd"
-	"errors"
-	"sync"
+    "context"
+    "cs-server-controller/config"
+    "cs-server-controller/logwrt"
+    "cs-server-controller/server"
+    "cs-server-controller/steamcmd"
+    "errors"
+    "sync"
 )
 
 type configKeyType uint
@@ -31,36 +31,36 @@ type userLogWriterKeyType uint
 const UserLogWriterKey userLogWriterKeyType = 0
 
 func GetConfig(ctx context.Context) (config.Config, error) {
-	cfg, ok := ctx.Value(ConfigKey).(config.Config)
-	if !ok {
-		return config.Config{}, errors.New("failed to get config from context")
-	}
+    cfg, ok := ctx.Value(ConfigKey).(config.Config)
+    if !ok {
+        return config.Config{}, errors.New("failed to get config from context")
+    }
 
-	return cfg, nil
+    return cfg, nil
 }
 
-func GetSteamcmdAndServerInstance(ctx context.Context) (*sync.Mutex, *server.ServerInstance, *steamcmd.SteamcmdInstance, error) {
-	lock, ok := ctx.Value(ServerSteamcmdLockKey).(*sync.Mutex)
-	if lock == nil || !ok {
-		return nil, nil, nil, errors.New("failed to get server/steamcmd lock from context")
-	}
-	server, ok := ctx.Value(ServerInstanceKey).(*server.ServerInstance)
-	if server == nil || !ok {
-		return nil, nil, nil, errors.New("failed to get server instance from context")
-	}
-	steamcmd, ok := ctx.Value(SteamCmdInstanceKey).(*steamcmd.SteamcmdInstance)
-	if steamcmd == nil || !ok {
-		return nil, nil, nil, errors.New("failed to get steamcmd instance from context")
-	}
+func GetSteamcmdAndServerInstance(ctx context.Context) (*sync.Mutex, *server.Instance, *steamcmd.Instance, error) {
+    lock, ok := ctx.Value(ServerSteamcmdLockKey).(*sync.Mutex)
+    if lock == nil || !ok {
+        return nil, nil, nil, errors.New("failed to get server/steamcmd lock from context")
+    }
+    server, ok := ctx.Value(ServerInstanceKey).(*server.Instance)
+    if server == nil || !ok {
+        return nil, nil, nil, errors.New("failed to get server instance from context")
+    }
+    steamcmd, ok := ctx.Value(SteamCmdInstanceKey).(*steamcmd.Instance)
+    if steamcmd == nil || !ok {
+        return nil, nil, nil, errors.New("failed to get steamcmd instance from context")
+    }
 
-	return lock, server, steamcmd, nil
+    return lock, server, steamcmd, nil
 }
 
 func GetUserLogWriter(ctx context.Context) (*logwrt.LogWriter, error) {
-	logWriter, ok := ctx.Value(UserLogWriterKey).(*logwrt.LogWriter)
-	if logWriter == nil || !ok {
-		return nil, errors.New("failed to get user log writer from context")
-	}
+    logWriter, ok := ctx.Value(UserLogWriterKey).(*logwrt.LogWriter)
+    if logWriter == nil || !ok {
+        return nil, errors.New("failed to get user log writer from context")
+    }
 
-	return logWriter, nil
+    return logWriter, nil
 }

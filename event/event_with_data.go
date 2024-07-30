@@ -1,68 +1,68 @@
 package event
 
 import (
-	"sync"
-	"time"
+    "sync"
+    "time"
 
-	"github.com/google/uuid"
+    "github.com/google/uuid"
 )
 
 type PayloadWithData[T any] struct {
-	DefaultPayload
-	Data T
+    DefaultPayload
+    Data T
 }
 
-type EventWithData[T any] struct {
-	lock     sync.Mutex
-	handlers map[uuid.UUID]func(PayloadWithData[T])
+type InstanceWithData[T any] struct {
+    lock     sync.Mutex
+    handlers map[uuid.UUID]func(PayloadWithData[T])
 }
 
-func (e *EventWithData[T]) Register(handler func(PayloadWithData[T])) uuid.UUID {
-	e.lock.Lock()
-	defer e.lock.Unlock()
+func (e *InstanceWithData[T]) Register(handler func(PayloadWithData[T])) uuid.UUID {
+    e.lock.Lock()
+    defer e.lock.Unlock()
 
-	if e.handlers == nil {
-		e.handlers = make(map[uuid.UUID]func(PayloadWithData[T]))
-	}
+    if e.handlers == nil {
+        e.handlers = make(map[uuid.UUID]func(PayloadWithData[T]))
+    }
 
-	uuid := uuid.New()
-	e.handlers[uuid] = handler
-	return uuid
+    uuid := uuid.New()
+    e.handlers[uuid] = handler
+    return uuid
 }
 
-func (e *EventWithData[T]) Deregister(handlerUuid uuid.UUID) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
+func (e *InstanceWithData[T]) Deregister(handlerUuid uuid.UUID) {
+    e.lock.Lock()
+    defer e.lock.Unlock()
 
-	if e.handlers == nil {
-		return
-	}
+    if e.handlers == nil {
+        return
+    }
 
-	delete(e.handlers, handlerUuid)
+    delete(e.handlers, handlerUuid)
 }
 
-func (e *EventWithData[T]) Trigger(dataIn T) {
-	p := PayloadWithData[T]{
-		DefaultPayload: DefaultPayload{
-			TriggeredAtUtc: time.Now().UTC(),
-		},
-		Data: dataIn,
-	}
+func (e *InstanceWithData[T]) Trigger(dataIn T) {
+    p := PayloadWithData[T]{
+        DefaultPayload: DefaultPayload{
+            TriggeredAtUtc: time.Now().UTC(),
+        },
+        Data: dataIn,
+    }
 
-	e.lock.Lock()
-	defer e.lock.Unlock()
+    e.lock.Lock()
+    defer e.lock.Unlock()
 
-	if e.handlers == nil {
-		return
-	}
+    if e.handlers == nil {
+        return
+    }
 
-	wg := sync.WaitGroup{}
-	for _, handler := range e.handlers {
-		wg.Add(1)
-		go func() {
-			handler(p)
-			wg.Done()
-		}()
-	}
-	wg.Wait()
+    wg := sync.WaitGroup{}
+    for _, handler := range e.handlers {
+        wg.Add(1)
+        go func() {
+            handler(p)
+            wg.Done()
+        }()
+    }
+    wg.Wait()
 }
