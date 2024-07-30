@@ -56,7 +56,13 @@ func (e *EventWithData[T]) Trigger(dataIn T) {
 		return
 	}
 
+	wg := sync.WaitGroup{}
 	for _, handler := range e.handlers {
-		handler(p)
+		wg.Add(1)
+		go func() {
+			handler(p)
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 }

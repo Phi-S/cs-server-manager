@@ -1,10 +1,8 @@
 package handlers
 
 import (
+	"cs-server-controller/ctxex"
 	"cs-server-controller/httpex/errorwrp"
-	"cs-server-controller/logwrt"
-	"cs-server-controller/middleware"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,9 +10,9 @@ import (
 )
 
 func LogsHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	logWriter, ok := r.Context().Value(middleware.UserLogWriterKey).(*logwrt.LogWriter)
-	if logWriter == nil || !ok {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", errors.New("failed to get user logs writer from context"))
+	logWriter, err := ctxex.GetUserLogWriter(r.Context())
+	if err != nil {
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	countStr := r.URL.Query().Get("count")
@@ -39,9 +37,9 @@ func LogsHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
 }
 
 func LogsSinceHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	logWriter, ok := r.Context().Value(middleware.UserLogWriterKey).(*logwrt.LogWriter)
-	if logWriter == nil || !ok {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", errors.New("failed to get user logs writer from context"))
+	logWriter, err := ctxex.GetUserLogWriter(r.Context())
+	if err != nil {
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	sinceStr := r.URL.Query().Get("since")
@@ -63,9 +61,9 @@ func LogsSinceHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpErr
 }
 
 func LogFilesHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	logWriter, ok := r.Context().Value(middleware.UserLogWriterKey).(*logwrt.LogWriter)
-	if logWriter == nil || !ok {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", errors.New("failed to get user logs writer from context"))
+	logWriter, err := ctxex.GetUserLogWriter(r.Context())
+	if err != nil {
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	files, err := logWriter.GetPastLogFiles()
@@ -82,9 +80,9 @@ func LogFilesHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpErro
 }
 
 func LogFileContentHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	logWriter, ok := r.Context().Value(middleware.UserLogWriterKey).(*logwrt.LogWriter)
-	if logWriter == nil || !ok {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", errors.New("failed to get user logs writer from context"))
+	logWriter, err := ctxex.GetUserLogWriter(r.Context())
+	if err != nil {
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	fileName := r.URL.Query().Get("name")

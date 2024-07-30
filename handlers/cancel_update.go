@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"cs-server-controller/ctxex"
 	"cs-server-controller/httpex/errorwrp"
-	"cs-server-controller/middleware"
 	"net/http"
 )
 
 func CancelUpdateHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, _, steamcmdInstance, err := middleware.GetSteamcmdAndServerInstance(r.Context())
+	_, _, steamcmdInstance, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
 		return errorwrp.NewHttpError(http.StatusInternalServerError, "internal error", err)
 	}

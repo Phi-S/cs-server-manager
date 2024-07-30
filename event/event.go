@@ -52,7 +52,13 @@ func (e *Event) Trigger() {
 		return
 	}
 
+	wg := sync.WaitGroup{}
 	for _, handler := range e.handlers {
-		handler(payload)
+		wg.Add(1)
+		go func() {
+			handler(payload)
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 }

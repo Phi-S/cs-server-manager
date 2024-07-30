@@ -1,14 +1,14 @@
 package handlers
 
 import (
+	"cs-server-controller/ctxex"
 	"cs-server-controller/httpex/errorwrp"
-	"cs-server-controller/middleware"
 	"net/http"
 	"strings"
 )
 
 func SendCommandHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, serverInstance, _, err := middleware.GetSteamcmdAndServerInstance(r.Context())
+	_, serverInstance, _, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
 		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}

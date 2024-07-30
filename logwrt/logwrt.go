@@ -24,7 +24,7 @@ type LogEntry struct {
 }
 
 func (e *LogEntry) Format() string {
-	return fmt.Sprintf("%s | %s | %s\n", e.Timestamp.Format(time.RFC3339), e.LogType, e.Message)
+	return fmt.Sprintf("%s | %s | %s\n", e.Timestamp.Format(time.RFC3339Nano), e.LogType, e.Message)
 }
 
 func NewLogEntryFromLogLine(logLine string) (LogEntry, error) {
@@ -32,16 +32,19 @@ func NewLogEntryFromLogLine(logLine string) (LogEntry, error) {
 	if len(split) != 3 {
 		return LogEntry{}, errors.New("string malformed")
 	}
+	timestampStr := strings.TrimSpace(split[0])
+	logType := strings.TrimSpace(split[1])
+	message := strings.TrimSpace(split[2])
 
-	t, err := time.Parse(time.RFC3339, split[0])
+	timestamp, err := time.Parse(time.RFC3339Nano, timestampStr)
 	if err != nil {
 		return LogEntry{}, err
 	}
 
 	return LogEntry{
-		Timestamp: t,
-		LogType:   split[1],
-		Message:   split[2],
+		Timestamp: timestamp,
+		LogType:   logType,
+		Message:   message,
 	}, nil
 }
 
@@ -199,7 +202,7 @@ func (w *LogWriter) Close() {
 
 func (w *LogWriter) GetLogs(last int) ([]LogEntry, error) {
 	w.lock.RLock()
-	defer w.lock.RLock()
+	defer w.lock.RUnlock()
 
 	if last > w.getLogsLimit {
 		return nil, fmt.Errorf("requested log count is bigger then limit %v", w.getLogsLimit)
@@ -215,7 +218,7 @@ func (w *LogWriter) GetLogs(last int) ([]LogEntry, error) {
 		last = len(w.history)
 	}
 
-	result := make([]LogEntry, last)
+	result := make([]LogEntry, 0, last)
 	for i := 0; i < last; i++ {
 		result = append(result, w.history[i])
 	}
@@ -225,7 +228,7 @@ func (w *LogWriter) GetLogs(last int) ([]LogEntry, error) {
 
 func (w *LogWriter) GetLogsSince(since time.Time) ([]LogEntry, error) {
 	w.lock.RLock()
-	defer w.lock.Unlock()
+	defer w.lock.RUnlock()
 
 	result := make([]LogEntry, 0)
 	for _, e := range w.history {
@@ -263,7 +266,7 @@ func (w *LogWriter) GetPastLogFiles() ([]string, error) {
 
 // This operation can be expensive
 func (w *LogWriter) GetContentOfPastLogFile(pastLogFileName string) ([]LogEntry, error) {
-	if !regexp.MustCompile(`/^[a-zA-Z\d]+.log$`).MatchString(pastLogFileName) {
+	if !regexp.MustCompile(`^[a-zA-Z\d_\-:]+.log$`).MatchString(pastLogFileName) {
 		return nil, fmt.Errorf("past log file name %q is not valid", pastLogFileName)
 	}
 	pastLogFilePath := filepath.Join(w.logDir, pastLogFileName)
@@ -275,8 +278,12 @@ func (w *LogWriter) GetContentOfPastLogFile(pastLogFileName string) ([]LogEntry,
 
 	content := string(contentBytes)
 	lines := strings.Split(content, "\n")
-	result := make([]LogEntry, len(lines))
+	result := make([]LogEntry, 0, len(lines))
 	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+
 		entry, err := NewLogEntryFromLogLine(line)
 		if err != nil {
 			return nil, err

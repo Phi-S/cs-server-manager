@@ -33,6 +33,10 @@ func (s *ServerInstance) writeCommand(command string) error {
 }
 
 func (s *ServerInstance) SendCommand(command string) (string, error) {
+	if !s.started.Load() {
+		return "", errors.New("server is not yet started")
+	}
+
 	const startPrefix = "#####_START_"
 	const endPrefix = "#####_END_"
 	uuid := uuid.New().String()

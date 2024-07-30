@@ -21,10 +21,12 @@ type ServerInstance struct {
 	port      string
 
 	running atomic.Bool
+	started atomic.Bool
 	stop    atomic.Bool
 
 	cmd    *exec.Cmd
 	writer *io.PipeWriter
+	reader *io.PipeReader
 
 	startStopLock sync.Mutex
 	commandLock   sync.Mutex
@@ -78,7 +80,6 @@ func NewInstance(serverDir, port string, enableEventLogging bool) (*ServerInstan
 	return &i, nil
 }
 
-
 func (s *ServerInstance) IsRunning() bool {
 	return s.running.Load()
 }
@@ -96,6 +97,11 @@ func (s *ServerInstance) Close() {
 	if s.writer != nil {
 		s.writer.Close()
 		s.writer = nil
+	}
+
+	if s.reader != nil {
+		s.reader.Close()
+		s.reader = nil
 	}
 }
 

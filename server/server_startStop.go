@@ -3,7 +3,6 @@ package server
 import (
 	"bufio"
 	"cs-server-controller/event"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,37 +13,40 @@ import (
 	"time"
 )
 
-
 func (s *ServerInstance) waitForServerToExit(onExitedChannel chan error) {
 	slog.Error(" ============================================ waiting for channel to close")
 	err := <-onExitedChannel
 	slog.Error(" ============================================ channel closed")
 
-
+	if s.stop.Load() {
+		s.onServerStopped.Trigger()
+	} else if err != nil {
+		s.onServerCrashed.Trigger(fmt.Errorf("server exited unexpectedly. %v", err))
+	} else {
+		s.onServerCrashed.Trigger(fmt.Errorf("server exited unexpectedly"))
+	}
 
 	s.Close()
 	s.running.Store(false)
 	s.stop.Store(false)
-	slog.Debug("server exited. all resources cleared")
+	s.started.Store(false)
+	slog.Debug("server exited and all resources released")
 }
 
 func (s *ServerInstance) Start(sp StartParameters) error {
-	spJson, _ := json.Marshal(sp)
-	slog.Debug("trying to start server with start parameters " + string(spJson))
 	if s.IsRunning() {
-		slog.Debug("failed to start server. server is already running")
 		return errors.New("server is running")
 	}
 
+	slog.Debug("trying to start server with start parameters", "start-parameters", sp)
+
 	s.startStopLock.Lock()
 	defer s.startStopLock.Unlock()
-	s.commandLock.Lock()
-	defer s.commandLock.Unlock()
 
-	s.running.Store(true)
-	s.onServerStarting.Trigger()
 	onExitedChan := make(chan error)
 	go s.waitForServerToExit(onExitedChan)
+	s.running.Store(true)
+	s.onServerStarting.Trigger()
 
 	password := strings.TrimSpace(sp.Password)
 	if len([]rune(password)) == 0 {
@@ -83,7 +85,6 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 
 	if err := cmd.Start(); err != nil {
 		slog.Debug("failed to start server process. " + err.Error())
-		s.onServerCrashed.Trigger(err)
 		onExitedChan <- err
 		return err
 	}
@@ -91,19 +92,18 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 
 	s.cmd = cmd
 	s.writer = inW
+	s.reader = outR
 
-	go func ()  {
+	go func() {
 		err := cmd.Wait()
 		onExitedChan <- err
 	}()
-	
-	go s.checkIfServerIsRunning(cmd)
+
 	go s.flushServerOutput(inW)
 	go s.readServerOutput(outR)
 
 	if err := s.waitForServerToStart(inW, time.Millisecond*30_000); err != nil {
 		slog.Debug("failed to wait for server to start. " + err.Error())
-		s.onServerCrashed.Trigger(err)
 		onExitedChan <- err
 		return err
 	}
@@ -111,24 +111,6 @@ func (s *ServerInstance) Start(sp StartParameters) error {
 	s.onServerStarted.Trigger()
 	slog.Info("server started")
 	return nil
-}
-
-func (s *ServerInstance) checkIfServerIsRunning(cmd *exec.Cmd) {
-	err := cmd.Wait()
-	
-
-	if s.stop.Load() {
-		s.onServerStopped.Trigger()
-	} else {
-		if err != nil {
-			s.onServerCrashed.Trigger(fmt.Errorf("server exited unexpectedly. %v", err))
-		} else {
-			s.onServerCrashed.Trigger(fmt.Errorf("server exited unexpectedly"))
-		}
-	}
-
-	onExitedChan <- true
-	slog.Debug("check if server is running exited")
 }
 
 func (s *ServerInstance) flushServerOutput(writer *io.PipeWriter) {
@@ -151,12 +133,13 @@ func (s *ServerInstance) flushServerOutput(writer *io.PipeWriter) {
 
 func (s *ServerInstance) readServerOutput(reader *io.PipeReader) {
 	scanner := bufio.NewScanner(reader)
-
-	for scanner.Scan() && s.IsRunning() {
+	for scanner.Scan() {
 		out := strings.TrimSpace(scanner.Text())
-		if out != "" {
-			s.onOutput.Trigger(out)
+		if out == "" {
+			continue
 		}
+
+		s.onOutput.Trigger(out)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -196,6 +179,7 @@ func (s *ServerInstance) waitForServerToStart(write *io.PipeWriter, timeout time
 		}
 
 		if serverStarted {
+			s.started.Store(true)
 			return nil
 		}
 		time.Sleep(time.Millisecond * 500)
@@ -226,11 +210,22 @@ func (s *ServerInstance) Stop() error {
 		}
 	}
 
-	const timeout = time.Second * 15
+	const gracefulStopTimeout = time.Second * 10
+	const stopTimeout = time.Second * 20
 	startTime := time.Now()
 	for {
-		if time.Since(startTime) > timeout {
-			return fmt.Errorf("timeout of %q reached", timeout)
+		if time.Since(startTime) > gracefulStopTimeout {
+			slog.Warn("failed to stop gracefully. Timeout reached. Killing process")
+			if s.cmd.Process != nil {
+				s.cmd.Process.Kill()
+				s.cmd.Process.Release()
+			} else {
+				return fmt.Errorf("failed to force stop server. Process is nil")
+			}
+		}
+
+		if time.Since(startTime) > stopTimeout {
+			return fmt.Errorf("timeout of %q reached", stopTimeout)
 		}
 
 		if !s.IsRunning() {

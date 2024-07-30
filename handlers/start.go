@@ -1,12 +1,10 @@
 package handlers
 
 import (
-	"cs-server-controller/config"
+	"cs-server-controller/ctxex"
 	"cs-server-controller/httpex/errorwrp"
 	json_file "cs-server-controller/jsonfile"
-	"cs-server-controller/middleware"
 	"cs-server-controller/server"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -17,7 +15,7 @@ import (
 )
 
 func StartHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	lock, s, steamcmd, err := middleware.GetSteamcmdAndServerInstance(r.Context())
+	lock, s, steamcmd, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
 		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
@@ -32,9 +30,9 @@ func StartHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) 
 
 	q := r.URL.Query()
 
-	config, ok := r.Context().Value(middleware.ConfigKey).(config.Config)
-	if !ok {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", errors.New("failed to get config from context"))
+	config, err := ctxex.GetConfig(r.Context())
+	if err != nil {
+		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
 
 	startParametersJsonPath := filepath.Join(config.DataDir, "start-parameters.json")

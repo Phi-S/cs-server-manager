@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"cs-server-controller/config"
+	"cs-server-controller/ctxex"
 	"cs-server-controller/handlers"
 	"cs-server-controller/httpex/errorwrp"
 	"cs-server-controller/logwrt"
@@ -60,19 +62,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	userLogsWriter, err := logwrt.NewLogWriter(logDir, "user-logs")
+	userLogWriter, err := logwrt.NewLogWriter(logDir, "user-logs")
 	if err != nil {
 		slog.Error("failed to create user logs write", "error", err)
 		os.Exit(1)
 	}
-	defer userLogsWriter.Close()
+	defer userLogWriter.Close()
 
-	writeEventsTpUserLogFile(userLogsWriter, serverInstance, steamcmdInstance)
+	writeEventsTpUserLogFile(userLogWriter, serverInstance, steamcmdInstance)
 
 	// api
-
 	main := http.NewServeMux()
 	v1 := http.NewServeMux()
+	main.Handle("/v1/", func() http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, ctxex.ConfigKey, config)
+			ctx = context.WithValue(ctx, ctxex.ServerSteamcmdLockKey, &ServerSteamcmdLock)
+			ctx = context.WithValue(ctx, ctxex.ServerInstanceKey, serverInstance)
+			ctx = context.WithValue(ctx, ctxex.SteamCmdInstanceKey, steamcmdInstance)
+			http.StripPrefix("/v1", v1).ServeHTTP(w, r.WithContext(ctx))
+		})
+	}())
 
 	errorwrp.GET(v1, "/status", handlers.StatusHandler)
 
@@ -83,20 +94,22 @@ func main() {
 	errorwrp.POST(v1, "/update", handlers.UpdateHandler)
 	errorwrp.POST(v1, "/cancel-update", handlers.CancelUpdateHandler)
 
-	errorwrp.GET(v1, "/logs", handlers.LogsHandler)
-	errorwrp.GET(v1, "/logs-since", handlers.LogsSinceHandler)
-	errorwrp.GET(v1, "/log-files", handlers.LogFilesHandler)
-	errorwrp.GET(v1, "/log-file", handlers.LogFileContentHandler)
+	// log
+	log := http.NewServeMux()
+	v1.Handle("/log/", func() http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, ctxex.UserLogWriterKey, userLogWriter)
+			http.StripPrefix("/log", log).ServeHTTP(w, r.WithContext(ctx))
+		})
+	}())
 
-	main.Handle("/v1/", middleware.ContextValues(
-		http.StripPrefix("/v1", v1),
-		config,
-		&ServerSteamcmdLock,
-		serverInstance,
-		steamcmdInstance,
-		userLogsWriter,
-	))
+	errorwrp.GET(log, "/last", handlers.LogsHandler)
+	errorwrp.GET(log, "/since", handlers.LogsSinceHandler)
+	errorwrp.GET(log, "/files", handlers.LogFilesHandler)
+	errorwrp.GET(log, "/file", handlers.LogFileContentHandler)
 
+	// serve
 	slog.Info("listening at port "+config.HttpPort, "port", config.HttpPort)
 	slog.Error("Failed to start http server", "error",
 		http.ListenAndServe(":"+config.HttpPort, middleware.TraceId(

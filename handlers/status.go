@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"cs-server-controller/ctxex"
 	"cs-server-controller/httpex/errorwrp"
-	"cs-server-controller/middleware"
 	"net/http"
 )
 
@@ -12,7 +12,7 @@ type StatusResponse struct {
 }
 
 func StatusHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, server, steamcmd, err := middleware.GetSteamcmdAndServerInstance(r.Context())
+	_, server, steamcmd, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
 	if err != nil {
 		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
 	}
