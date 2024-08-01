@@ -108,7 +108,7 @@ func (s *Instance) Start(sp StartParameters) error {
         return err
     }
 
-    s.onStarted.Trigger()
+    s.onStarted.Trigger(sp)
     slog.Info("server started")
     return nil
 }

@@ -24,7 +24,7 @@ type LogEntry struct {
 }
 
 func (e *LogEntry) Format() string {
-    return fmt.Sprintf("%s | %s | %s\n", e.Timestamp.Format(time.RFC3339Nano), e.LogType, e.Message)
+    return fmt.Sprintf("%s | %s | %s\n", e.LogType, e.Timestamp.Format(time.RFC3339Nano), e.Message)
 }
 
 func NewLogEntryFromLogLine(logLine string) (LogEntry, error) {
@@ -127,22 +127,26 @@ func (w *LogWriter) GetLogsLimit() int {
     return w.getLogsLimit
 }
 
-func (w *LogWriter) WriteLog(timestamp time.Time, logType string, msg string) error {
+func (w *LogWriter) WriteLogEntry(entry LogEntry) error {
     w.lock.Lock()
     defer w.lock.Unlock()
 
-    logEntry := NewLogEntry(timestamp, logType, msg)
-    _, err := w.fileWriter.WriteString(logEntry.Format())
+    _, err := w.fileWriter.WriteString(entry.Format())
     if err != nil {
         return err
     }
 
-    w.history = append(w.history, logEntry)
+    w.history = append(w.history, entry)
     w.linesWrittenSinceRollover += 1
 
     w.trimHistoryIfTooLarge()
     w.rolloverLogFileIfTooLarge()
     return nil
+}
+
+func (w *LogWriter) WriteLog(timestamp time.Time, logType string, msg string) error {
+    logEntry := NewLogEntry(timestamp, logType, msg)
+    return w.WriteLogEntry(logEntry)
 }
 
 func (w *LogWriter) trimHistoryIfTooLarge() {
@@ -185,7 +189,7 @@ func (w *LogWriter) rolloverLogFileIfTooLarge() {
 
         oldLogFilePath := w.GetCurrentLogFilePath()
 
-        w.fileWriter.Close()
+        _ = w.fileWriter.Close()
         w.fileWriter = newFileWriter
         w.linesWrittenSinceRollover = 0
         w.currentFileName = newFileName
@@ -200,7 +204,7 @@ func (w *LogWriter) rolloverLogFileIfTooLarge() {
 
 func (w *LogWriter) Close() {
     if w.fileWriter != nil {
-        w.fileWriter.Close()
+        _ = w.fileWriter.Close()
     }
 }
 
@@ -212,8 +216,8 @@ func (w *LogWriter) GetLogs(last int) ([]LogEntry, error) {
         return nil, fmt.Errorf("requested log count is bigger then limit %v", w.getLogsLimit)
     }
 
-    if last <= len(w.history) {
-        result := make([]LogEntry, len(w.history))
+    if last < len(w.history) {
+        result := make([]LogEntry, last)
         copy(result, w.history)
         return result, nil
     }
@@ -268,10 +272,14 @@ func (w *LogWriter) GetPastLogFiles() ([]string, error) {
     return pastLogFiles, nil
 }
 
-// This operation can be expensive
+// GetContentOfPastLogFile This operation can be expensive
 func (w *LogWriter) GetContentOfPastLogFile(pastLogFileName string) ([]LogEntry, error) {
     if !regexp.MustCompile(`^[a-zA-Z\d_\-:]+.log$`).MatchString(pastLogFileName) {
         return nil, fmt.Errorf("past log file name %q is not valid", pastLogFileName)
+    }
+
+    if !strings.Contains(pastLogFileName, w.name) {
+        return nil, errors.New("requested log file was not written with the current log writer")
     }
     pastLogFilePath := filepath.Join(w.logDir, pastLogFileName)
 

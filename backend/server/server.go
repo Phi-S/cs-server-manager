@@ -31,7 +31,7 @@ type Instance struct {
 
     onOutput   event.InstanceWithData[string]
     onStarting event.Instance
-    onStarted  event.Instance
+    onStarted  event.InstanceWithData[StartParameters]
     onStopped  event.Instance
     onCrashed  event.InstanceWithData[error]
 }

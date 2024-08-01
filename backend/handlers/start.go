@@ -9,7 +9,6 @@ import (
     "log/slog"
     "net/http"
     "net/url"
-    "path/filepath"
     "strconv"
     "strings"
 )
@@ -28,18 +27,16 @@ func StartHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) 
         return errorwrp.NewHttpErrorInternalServerError2("server is already running")
     }
 
-    q := r.URL.Query()
-
-    config, err := ctxex.GetConfig(r.Context())
+    startParameterJsonFile, err := ctxex.Get[*json_file.JsonFile[server.StartParameters]](r.Context(), ctxex.StartParametersJsonFileKey)
     if err != nil {
-        return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+        return errorwrp.HttpResponse{}, nil
     }
 
-    startParametersJsonPath := filepath.Join(config.DataDir, "start-parameters.json")
-    startParameters, err := getStarParameters(startParametersJsonPath, q)
+    q := r.URL.Query()
+
+    startParameters, err := getStarParameters(startParameterJsonFile, q)
     if err != nil {
-        slog.Debug("failed to read json file. Using default start parameters", "path", startParametersJsonPath)
-        startParameters = server.DefaultStartParameters()
+        return errorwrp.NewHttpErrorInternalServerError("internal error", err)
     }
 
     lock.Lock()
@@ -49,28 +46,17 @@ func StartHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) 
         return errorwrp.NewHttpErrorInternalServerError("failed to start server", err)
     }
 
-    startParametersJsonFileInstance, err := json_file.Get[server.StartParameters](startParametersJsonPath)
-    if err == nil {
-        if err := startParametersJsonFileInstance.Write(*startParameters); err != nil {
-            slog.Warn("server started but failed to save valid start parameters to file. " + err.Error())
-        }
-    } else {
-        slog.Warn("failed to get instance of start parameters json file")
+    if err := startParameterJsonFile.Write(*startParameters); err != nil {
+        slog.Warn("server started but failed to save valid start parameters to file. " + err.Error())
     }
 
     return errorwrp.NewOkHttpResponse()
 }
 
-func getStarParameters(startParametersJsonPath string, query url.Values) (*server.StartParameters, error) {
-    startParametersJsonFileInstance, err := json_file.Get[server.StartParameters](startParametersJsonPath)
-    if err != nil {
-        return nil, err
-    }
-
+func getStarParameters(startParametersJsonFileInstance *json_file.JsonFile[server.StartParameters], query url.Values) (*server.StartParameters, error) {
     startParameters, err := startParametersJsonFileInstance.Read()
     if err != nil {
-        slog.Debug("failed to read json file. Using default start parameters", "path", startParametersJsonFileInstance.GetPath())
-        startParameters = server.DefaultStartParameters()
+        return nil, err
     }
 
     if hostname := strings.TrimSpace(query.Get("name")); hostname != "" {

@@ -7,6 +7,7 @@ import (
     "cs-server-controller/server"
     "cs-server-controller/steamcmd"
     "errors"
+    "fmt"
     "sync"
 )
 
@@ -29,6 +30,19 @@ const SteamCmdInstanceKey steamCmdInstanceKeyType = 0
 type userLogWriterKeyType uint
 
 const UserLogWriterKey userLogWriterKeyType = 0
+
+type startParametersJsonFileKeyType uint
+
+const StartParametersJsonFileKey startParametersJsonFileKeyType = 0
+
+func Get[T any](ctx context.Context, key any) (T, error) {
+    value, ok := ctx.Value(key).(T)
+    if !ok {
+        return *new(T), fmt.Errorf("failed to get %q value from context", key)
+    }
+
+    return value, nil
+}
 
 func GetConfig(ctx context.Context) (config.Config, error) {
     cfg, ok := ctx.Value(ConfigKey).(config.Config)

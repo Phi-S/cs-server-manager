@@ -10,7 +10,7 @@ func (s *Instance) OnStarting(handler func(event.DefaultPayload)) {
     s.onStarting.Register(handler)
 }
 
-func (s *Instance) OnStarted(handler func(event.DefaultPayload)) {
+func (s *Instance) OnStarted(handler func(event.PayloadWithData[StartParameters])) {
     s.onStarted.Register(handler)
 }
 

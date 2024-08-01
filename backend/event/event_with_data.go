@@ -25,9 +25,9 @@ func (e *InstanceWithData[T]) Register(handler func(PayloadWithData[T])) uuid.UU
         e.handlers = make(map[uuid.UUID]func(PayloadWithData[T]))
     }
 
-    uuid := uuid.New()
-    e.handlers[uuid] = handler
-    return uuid
+    newUUID := uuid.New()
+    e.handlers[newUUID] = handler
+    return newUUID
 }
 
 func (e *InstanceWithData[T]) Deregister(handlerUuid uuid.UUID) {
@@ -52,7 +52,7 @@ func (e *InstanceWithData[T]) Trigger(dataIn T) {
     e.lock.Lock()
     defer e.lock.Unlock()
 
-    if e.handlers == nil {
+    if e.handlers == nil || len(e.handlers) == 0 {
         return
     }
 

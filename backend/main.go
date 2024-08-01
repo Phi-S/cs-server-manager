@@ -4,12 +4,16 @@ import (
     "context"
     "cs-server-controller/config"
     "cs-server-controller/ctxex"
+    "cs-server-controller/event"
     "cs-server-controller/handlers"
     "cs-server-controller/httpex/errorwrp"
     "cs-server-controller/httpex/middleware"
+    json_file "cs-server-controller/jsonfile"
     "cs-server-controller/logwrt"
     "cs-server-controller/server"
     "cs-server-controller/steamcmd"
+    "fmt"
+    "golang.org/x/net/websocket"
     "log/slog"
     "net/http"
     "os"
@@ -57,6 +61,18 @@ func main() {
         serverInstance.Close()
     }()
 
+    startParametersJsonFile, err := json_file.Get[server.StartParameters](filepath.Join(cfg.DataDir, "start-parameters.json"), *server.DefaultStartParameters())
+    if err != nil {
+        slog.Error("failed to create new json file service for start-parameter.json", "error", err)
+        os.Exit(1)
+    }
+
+    startParameters, err := startParametersJsonFile.Read()
+    if err != nil {
+        slog.Error("failed to read start-parameter.json", "error", err)
+        os.Exit(1)
+    }
+
     logDir := filepath.Join(cfg.DataDir, "logs")
     userLogWriter, err := logwrt.NewLogWriter(logDir, "user-logs")
     if err != nil {
@@ -65,12 +81,38 @@ func main() {
     }
     defer userLogWriter.Close()
 
-    writeEventsTpUserLogFile(userLogWriter, serverInstance, steamcmdInstance)
+    status := NewStatus(startParameters.Hostname, startParameters.MaxPlayers, startParameters.StartMap)
+    status.ChangeStatusOnEvents(serverInstance, steamcmdInstance)
+
+    webSocketServer := NewWebSocketServer()
+    webSocketServer.OnIncomingMessageEvent.Register(func(p event.PayloadWithData[IncomingWebSocketMessage]) {
+        fmt.Println("INC MSG FROM ", p.Data.clientConnection.RemoteAddr(), " MSG: ", p.Data.message)
+
+        for i := 0; i < 500; i++ {
+            msg := fmt.Sprintf("kekekeke %v", i)
+            _, err := p.Data.clientConnection.Write([]byte(msg))
+            if err != nil {
+                slog.Error("error sending msg", err)
+            }
+        }
+    })
+
+    status.OnStatusChanged(func(payload event.DefaultPayload) {
+        currentStatus := status.Status()
+        if err := webSocketServer.Broadcast("status", currentStatus); err != nil {
+            slog.Error("failed to send status message", "status", currentStatus, "error", err)
+        }
+    })
+
+    writeEventToLogFileAndWebSocket(userLogWriter, webSocketServer, serverInstance, steamcmdInstance)
     enableEventLogging(serverInstance, steamcmdInstance)
 
     // api
     main := http.NewServeMux()
+    main.Handle("/ws", websocket.Handler(webSocketServer.handleWs))
+
     v1 := http.NewServeMux()
+    v1Handler := middleware.TraceId(middleware.Logging(middleware.Recover(v1)))
     main.Handle("/v1/", func() http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             ctx := r.Context()
@@ -78,7 +120,8 @@ func main() {
             ctx = context.WithValue(ctx, ctxex.ServerSteamcmdLockKey, &ServerSteamcmdLock)
             ctx = context.WithValue(ctx, ctxex.ServerInstanceKey, serverInstance)
             ctx = context.WithValue(ctx, ctxex.SteamCmdInstanceKey, steamcmdInstance)
-            http.StripPrefix("/v1", v1).ServeHTTP(w, r.WithContext(ctx))
+            ctx = context.WithValue(ctx, ctxex.StartParametersJsonFileKey, startParametersJsonFile)
+            http.StripPrefix("/v1", v1Handler).ServeHTTP(w, r.WithContext(ctx))
         })
     }())
 
@@ -109,13 +152,7 @@ func main() {
     // serve
     slog.Info("listening at port "+cfg.HttpPort, "port", cfg.HttpPort)
     slog.Error("Failed to start http server", "error",
-        http.ListenAndServe(":"+cfg.HttpPort, middleware.TraceId(
-            middleware.Logging(
-                middleware.Recover(
-                    main,
-                ),
-            ),
-        )),
+        http.ListenAndServe(":"+cfg.HttpPort, main),
     )
 }
 
