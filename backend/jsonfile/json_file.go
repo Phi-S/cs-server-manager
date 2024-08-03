@@ -1,99 +1,105 @@
 package json_file
 
 import (
-    "encoding/json"
-    "fmt"
-    "os"
-    "path/filepath"
-    "reflect"
-    "runtime"
-    "sync"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"os"
+	"reflect"
+	"sync"
 
-    "github.com/asaskevich/govalidator"
+	"github.com/go-playground/validator/v10"
 )
 
-type JsonFile[T any] struct {
-    path string
+func New[T any](pathIn string, defaultValueIfNoExist T) (*JsonFile[T], error) {
+	v := validator.New(validator.WithRequiredStructEnabled())
 
-    tType reflect.Type
-    lock  sync.Mutex
+	if err := v.Var(pathIn, "required,filepath"); err != nil {
+		return nil, err
+	}
+
+	var tType T
+	requiredType := reflect.TypeOf(tType)
+
+	jsonFileInstance := &JsonFile[T]{
+		path:     pathIn,
+		tType:    requiredType,
+		validate: v,
+	}
+
+	_, err := os.Stat(pathIn)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if err := jsonFileInstance.Write(defaultValueIfNoExist); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	if _, err := jsonFileInstance.Read(); err != nil {
+		return nil, err
+	}
+
+	return jsonFileInstance, nil
+}
+
+type JsonFile[T any] struct {
+	path string
+
+	tType    reflect.Type
+	lock     sync.Mutex
+	validate *validator.Validate
 }
 
 func (j *JsonFile[T]) GetPath() string {
-    return j.path
+	return j.path
 }
 
 func (j *JsonFile[T]) GetType() reflect.Type {
-    return j.tType
+	return j.tType
 }
 
 func (j *JsonFile[T]) Write(data T) error {
-    dataAsJson, err := json.Marshal(data)
-    if err != nil {
-        return err
-    }
+	dataAsJson, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return err
+	}
 
-    j.lock.Lock()
-    defer j.lock.Unlock()
+	j.lock.Lock()
+	defer j.lock.Unlock()
 
-    if err := os.WriteFile(j.path, dataAsJson, 0777); err != nil {
-        return err
-    }
+	if err := os.WriteFile(j.path, dataAsJson, 0777); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (j *JsonFile[T]) Read() (*T, error) {
-    j.lock.Lock()
-    defer j.lock.Unlock()
+	j.lock.Lock()
+	defer j.lock.Unlock()
 
-    content, err := os.ReadFile(j.path)
-    if err != nil {
-        return nil, err
-    }
+	content, err := os.ReadFile(j.path)
+	if err != nil {
+		return nil, err
+	}
 
-    data := new(T)
-    if err := json.Unmarshal(content, data); err != nil {
-        return nil, err
-    }
+	data := new(T)
 
-    return data, nil
-}
+	// using decoder so jsons with too many field produce errors
+	decoder := json.NewDecoder(bytes.NewReader(content))
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&data)
+	if err != nil {
+		return nil, err
+	}
 
-func Get[T any](pathIn string, defaultValueIfNoExist T) (*JsonFile[T], error) {
-    if runtime.GOOS == "windows" && !govalidator.IsWinFilePath(pathIn) {
-        return nil, fmt.Errorf("path %q is not a valid win file path", pathIn)
-    } else if !govalidator.IsUnixFilePath(pathIn) {
-        return nil, fmt.Errorf("path %q is not a valid file path", pathIn)
-    }
+	val := validator.New(validator.WithRequiredStructEnabled())
+	if err := val.Struct(data); err != nil {
+		return nil, err
+	}
 
-    pathIn, err := filepath.Abs(pathIn)
-    if err != nil {
-        return nil, err
-    }
-
-    var tType T
-    requiredType := reflect.TypeOf(tType)
-
-    jsonFileInstance := &JsonFile[T]{
-        path:  pathIn,
-        tType: requiredType,
-    }
-
-    _, err = os.Stat(pathIn)
-    if err != nil {
-        if os.IsNotExist(err) {
-            if err := jsonFileInstance.Write(defaultValueIfNoExist); err != nil {
-                return nil, err
-            }
-        }
-
-        return nil, err
-    }
-
-    if _, err := jsonFileInstance.Read(); err != nil {
-        return nil, err
-    }
-
-    return jsonFileInstance, nil
+	return data, nil
 }

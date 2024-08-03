@@ -3,20 +3,20 @@ package steamcmd
 import "cs-server-controller/event"
 
 func (s *Instance) OnOutput(handler func(event.PayloadWithData[string])) {
-    s.onOutput.Register(handler)
+	s.onOutput.Register(handler)
 }
 
 func (s *Instance) OnStarted(handler func(event.DefaultPayload)) {
-    s.onStarted.Register(handler)
+	s.onStarted.Register(handler)
 }
 
 func (s *Instance) OnFinished(handler func(event.DefaultPayload)) {
-    s.onFinished.Register(handler)
+	s.onFinished.Register(handler)
 }
 
 func (s *Instance) OnCancelled(handler func(event.DefaultPayload)) {
-    s.onCancelled.Register(handler)
+	s.onCancelled.Register(handler)
 }
 func (s *Instance) OnFailed(handler func(event.PayloadWithData[error])) {
-    s.onFailed.Register(handler)
+	s.onFailed.Register(handler)
 }
