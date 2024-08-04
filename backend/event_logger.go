@@ -1,10 +1,10 @@
 package main
 
 import (
-	"cs-server-controller/event"
-	"cs-server-controller/logwrt"
-	"cs-server-controller/server"
-	"cs-server-controller/steamcmd"
+	"cs-server-manager/event"
+	"cs-server-manager/logwrt"
+	"cs-server-manager/server"
+	"cs-server-manager/steamcmd"
 	"log/slog"
 )
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -216,10 +217,8 @@ func (w *LogWriter) GetLogs(last int) ([]LogEntry, error) {
 		return nil, fmt.Errorf("requested log count is bigger then limit %v", w.getLogsLimit)
 	}
 
-	if last < len(w.history) {
-		result := make([]LogEntry, last)
-		copy(result, w.history)
-		return result, nil
+	if len(w.history) == 0 {
+		return make([]LogEntry, 0), nil
 	}
 
 	if len(w.history) < last {
@@ -227,7 +226,7 @@ func (w *LogWriter) GetLogs(last int) ([]LogEntry, error) {
 	}
 
 	result := make([]LogEntry, 0, last)
-	for i := 0; i < last; i++ {
+	for i := len(w.history) - 1; len(result) < last; i-- {
 		result = append(result, w.history[i])
 	}
 
@@ -238,6 +237,10 @@ func (w *LogWriter) GetLogsSince(since time.Time) ([]LogEntry, error) {
 	w.lock.RLock()
 	defer w.lock.RUnlock()
 
+	if len(w.history) == 0 {
+		return make([]LogEntry, 0), nil
+	}
+
 	result := make([]LogEntry, 0)
 	for _, e := range w.history {
 		if e.Timestamp.After(since) {
@@ -247,7 +250,7 @@ func (w *LogWriter) GetLogsSince(since time.Time) ([]LogEntry, error) {
 			}
 		}
 	}
-
+	slices.Reverse(result)
 	return result, nil
 }
 

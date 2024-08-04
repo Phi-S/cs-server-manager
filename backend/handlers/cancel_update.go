@@ -1,24 +1,24 @@
 package handlers
 
 import (
-	"cs-server-controller/ctxex"
-	"cs-server-controller/httpex/errorwrp"
 	"net/http"
+
+	"github.com/gofiber/fiber/v3"
 )
 
-func CancelUpdateHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, _, steamcmdInstance, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
+func CancelUpdateHandler(c fiber.Ctx) error {
+	_, _, steamcmdInstance, err := GetServerSteamcmdInstances(c)
 	if err != nil {
-		return errorwrp.NewHttpError(http.StatusInternalServerError, "internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
 	if !steamcmdInstance.IsRunning() {
-		return errorwrp.NewHttpErrorInternalServerError2("nothing to cancel. steamcmd is not running")
+		return fiber.NewError(http.StatusInternalServerError, "no update is running")
 	}
 
 	if err := steamcmdInstance.Cancel(); err != nil {
-		return errorwrp.NewHttpError(http.StatusInternalServerError, "failed to cancel server update", err)
+		return NewErrorWithInternal(c, fiber.StatusInternalServerError, "failed to cancel server update", err)
 	}
 
-	return errorwrp.NewOkHttpResponse()
+	return c.SendStatus(fiber.StatusOK)
 }

@@ -1,7 +1,7 @@
 package errorwrp
 
 import (
-	"cs-server-controller/httpex/middleware"
+	"cs-server-manager/httpex/middleware"
 	"encoding/json"
 	"log/slog"
 	"net/http"

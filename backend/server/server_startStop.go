@@ -2,21 +2,59 @@ package server
 
 import (
 	"bufio"
-	"cs-server-controller/event"
+	"cs-server-manager/event"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log/slog"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
+func (s *Instance) copySteamclient() error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home dir %w", err)
+	}
+
+	steamClientName := "steamclient.so"
+	steamClientSrcPath := filepath.Join(s.steamcmdDir, "linux64", steamClientName)
+	steamClientDestPath := filepath.Join(homeDir, ".steam", "sdk64", steamClientName)
+
+	if _, err := os.Stat(steamClientSrcPath); err != nil {
+		return fmt.Errorf("steamclient source not found %w", err)
+	}
+
+	src, err := ioutil.ReadFile(steamClientSrcPath)
+	if err != nil {
+		return fmt.Errorf("failed to read steamclient source %w", err)
+	}
+
+	if _, err := os.Stat(steamClientDestPath); err == nil {
+		return nil
+	}
+
+	if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("unexpected error while checking if steamclient already exists %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(steamClientDestPath), 0770); err != nil {
+		return fmt.Errorf("failed to create directories for steamclient %w", err)
+	}
+
+	if err := ioutil.WriteFile(steamClientDestPath, src, 0770); err != nil {
+		return fmt.Errorf("failed to write steamclient file %w", err)
+	}
+
+	return nil
+}
+
 func (s *Instance) waitForServerToExit(onExitedChannel chan error) {
-	slog.Error(" ============================================ waiting for channel to close")
 	err := <-onExitedChannel
-	slog.Error(" ============================================ channel closed")
 
 	if s.stop.Load() {
 		s.onStopped.Trigger()
@@ -47,6 +85,11 @@ func (s *Instance) Start(sp StartParameters) error {
 	go s.waitForServerToExit(onExitedChan)
 	s.running.Store(true)
 	s.onStarting.Trigger()
+
+	if err := s.copySteamclient(); err != nil {
+		onExitedChan <- err
+		return fmt.Errorf("failed to copy steamclient %w", err)
+	}
 
 	password := strings.TrimSpace(sp.Password)
 	if len([]rune(password)) == 0 {

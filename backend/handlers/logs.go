@@ -1,40 +1,51 @@
 package handlers
 
 import (
-	"cs-server-controller/ctxex"
-	"cs-server-controller/httpex/errorwrp"
+	"cs-server-manager/constants"
+	"cs-server-manager/logwrt"
 	"fmt"
-	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v3"
 )
 
-func LogsHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	logWriter, err := ctxex.GetUserLogWriter(r.Context())
+func LogsHandler(c fiber.Ctx) error {
+	logWriter, err := GetFromLocals[*logwrt.LogWriter](c, constants.UserLogWriterKey)
 	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	countStr := r.URL.Query().Get("count")
-	if countStr == "" {
-		return errorwrp.NewHttpError2(http.StatusBadRequest, "count parameter missing")
+	countOrSince := strings.TrimSpace(c.Params("countOrSince"))
+	if countOrSince == "" {
+		return fiber.NewError(fiber.StatusBadGateway, "expected parameter is empty")
 	}
 
-	count, err := strconv.Atoi(countStr)
-	if err != nil || count < 0 || count > logWriter.GetLogsLimit() {
-		return errorwrp.NewHttpError2(
-			http.StatusBadRequest,
-			fmt.Sprintf("count parameter is not a valid number between 1 and %v", logWriter.GetLogsLimit()),
-		)
+	count, countErr := strconv.ParseInt(countOrSince, 10, 64)
+	since, sinceErr := time.Parse(time.RFC3339Nano, countOrSince)
+	if countErr != nil && sinceErr != nil {
+		return fiber.NewError(fiber.StatusBadGateway, "expected parameter can only be a number of timestamp")
 	}
 
-	logs, err := logWriter.GetLogs(count)
-	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+	var result []logwrt.LogEntry
+	if countErr == nil {
+		result, err = logWriter.GetLogs(int(count))
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to get logs. %v", err))
+		}
+	} else {
+		result, err = logWriter.GetLogsSince(since)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to get logs. %v", err))
+		}
 	}
-	return errorwrp.NewOkJsonHttpResponse(logs)
 
+	return c.Status(fiber.StatusOK).JSON(result)
 }
+
+/*
+
 
 func LogsSinceHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
 	logWriter, err := ctxex.GetUserLogWriter(r.Context())
@@ -97,3 +108,4 @@ func LogFileContentHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.Ht
 
 	return errorwrp.NewOkJsonHttpResponse(logs)
 }
+*/

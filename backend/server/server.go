@@ -1,22 +1,22 @@
 package server
 
 import (
-	"cs-server-controller/event"
+	"cs-server-manager/event"
+	globalvalidator "cs-server-manager/global_validator"
 	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"sync"
 	"sync/atomic"
-
-	"github.com/asaskevich/govalidator"
 )
 
 var instanceCreated = false
 
 type Instance struct {
-	serverDir string
-	port      string
+	steamcmdDir string
+	serverDir   string
+	port        string
 
 	running atomic.Bool
 	started atomic.Bool
@@ -36,26 +36,27 @@ type Instance struct {
 	onCrashed  event.InstanceWithData[error]
 }
 
-func NewInstance(serverDir, port string) (*Instance, error) {
+func NewInstance(serverDir, port, steamcmdDir string) (*Instance, error) {
 	if instanceCreated {
 		return nil, errors.New("another instance already exists. Only one instance should be used throughout the program")
 	}
 
-	ok, _ := govalidator.IsFilePath(serverDir)
-	if !ok {
-		errorMsg := fmt.Sprintf("server dir %q is not a valid filepath", serverDir)
-		return nil, errors.New(errorMsg)
+	if err := globalvalidator.Instance.Var(serverDir, "required,dir"); err != nil {
+		return nil, fmt.Errorf("server dir %v is not a valid filepath %w", serverDir, err)
 	}
 
-	isPort := govalidator.IsPort(port)
-	if !isPort {
-		errorMsg := fmt.Sprintf("port %q is not a valid filepath", port)
-		return nil, errors.New(errorMsg)
+	if err := globalvalidator.Instance.Var(port, "required,port"); err != nil {
+		return nil, fmt.Errorf("port %q is not a valid filepath %w", port, err)
+	}
+
+	if err := globalvalidator.Instance.Var(steamcmdDir, "required,dir"); err != nil {
+		return nil, fmt.Errorf("steamcmd dir %v is not a valid filepath %w", steamcmdDir, err)
 	}
 
 	i := Instance{
-		serverDir: serverDir,
-		port:      port,
+		steamcmdDir: steamcmdDir,
+		serverDir:   serverDir,
+		port:        port,
 	}
 
 	i.onCrashed.Register(func(pwd event.PayloadWithData[error]) {

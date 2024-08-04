@@ -1,31 +1,29 @@
 package handlers
 
 import (
-	"cs-server-controller/ctxex"
-	"cs-server-controller/httpex/errorwrp"
-	"net/http"
+	"github.com/gofiber/fiber/v3"
 )
 
-func UpdateHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	lock, serverInstance, steamcmdInstance, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
+func UpdateHandler(c fiber.Ctx) error {
+	lock, serverInstance, steamcmdInstance, err := GetServerSteamcmdInstances(c)
 	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
 	lock.Lock()
 	defer lock.Unlock()
 
 	if steamcmdInstance.IsRunning() {
-		return errorwrp.NewHttpErrorInternalServerError2("update is already running")
+		return fiber.NewError(fiber.StatusInternalServerError, "another update is already running")
 	}
 
 	if serverInstance.IsRunning() {
-		return errorwrp.NewHttpErrorInternalServerError2("can not update server. server is still running")
+		return fiber.NewError(fiber.StatusInternalServerError, "can not update server. Server is still running")
 	}
 
 	if err := steamcmdInstance.Update(false); err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("failed to update server", err)
+		return NewErrorWithInternal(c, fiber.StatusInternalServerError, "failed to update server", err)
 	}
 
-	return errorwrp.NewHttpResponse(http.StatusAccepted)
+	return c.SendStatus(fiber.StatusAccepted)
 }

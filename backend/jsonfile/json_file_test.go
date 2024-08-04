@@ -1,7 +1,7 @@
 package json_file_test
 
 import (
-	json_file "cs-server-controller/jsonfile"
+	json_file "cs-server-manager/jsonfile"
 	"fmt"
 	"os"
 	"path/filepath"

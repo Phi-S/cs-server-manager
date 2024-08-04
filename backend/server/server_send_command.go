@@ -1,7 +1,7 @@
 package server
 
 import (
-	"cs-server-controller/event"
+	"cs-server-manager/event"
 	"errors"
 	"fmt"
 	"log/slog"

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cs-server-controller/event"
-	"cs-server-controller/logwrt"
+	"cs-server-manager/event"
+	"cs-server-manager/logwrt"
 	"encoding/json"
 	"fmt"
 	"io"

@@ -1,6 +1,6 @@
 package server
 
-import "cs-server-controller/event"
+import "cs-server-manager/event"
 
 func (s *Instance) OnOutput(handler func(event.PayloadWithData[string])) {
 	s.onOutput.Register(handler)

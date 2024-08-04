@@ -1,9 +1,9 @@
-package main
+package status
 
 import (
-	"cs-server-controller/event"
-	"cs-server-controller/server"
-	"cs-server-controller/steamcmd"
+	"cs-server-manager/event"
+	"cs-server-manager/server"
+	"cs-server-manager/steamcmd"
 	"encoding/json"
 	"sync"
 
@@ -26,17 +26,17 @@ func NewStatus(hostname string, maxPlayerCount uint8, startMap string) *Status {
 type ServerStatus string
 
 const (
-	ServerStatusStarted               = "server-status-started"
-	ServerStatusStarting              = "server-status-starting"
+	ServerStatusStarted  ServerStatus = "server-status-started"
+	ServerStatusStarting ServerStatus = "server-status-starting"
 	ServerStatusStopped  ServerStatus = "server-status-stopped"
-	ServerStatusStopping              = "server-status-stopping"
+	ServerStatusStopping ServerStatus = "server-status-stopping"
 )
 
 type SteamcmdStatus string
 
 const (
 	SteamcmdStatusStopped  SteamcmdStatus = "steamcmd-status-stopped"
-	SteamcmdStatusUpdating                = "steamcmd-status-updating"
+	SteamcmdStatusUpdating SteamcmdStatus = "steamcmd-status-updating"
 )
 
 type InternalStatus struct {

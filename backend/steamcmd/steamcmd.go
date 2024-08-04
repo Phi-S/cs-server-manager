@@ -2,7 +2,7 @@ package steamcmd
 
 import (
 	"bufio"
-	"cs-server-controller/event"
+	"cs-server-manager/event"
 	"errors"
 	"fmt"
 	"log/slog"

@@ -1,32 +1,32 @@
 package handlers
 
 import (
-	"cs-server-controller/ctxex"
-	"cs-server-controller/httpex/errorwrp"
-	"net/http"
+	"cs-server-manager/constants"
+	"cs-server-manager/server"
 	"strings"
+
+	"github.com/gofiber/fiber/v3"
 )
 
-func SendCommandHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, serverInstance, _, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
+func SendCommandHandler(c fiber.Ctx) error {
+
+	serverInstance, err := GetFromLocals[*server.Instance](c, constants.ServerInstanceKey)
 	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
 	if !serverInstance.IsRunning() {
-		return errorwrp.NewHttpErrorInternalServerError2("server is not running")
+		return fiber.NewError(fiber.StatusInternalServerError, "server is not running")
 	}
 
-	q := r.URL.Query()
-
-	command := strings.TrimSpace(q.Get("command"))
+	command := strings.TrimSpace(c.Query("command"))
 	if command == "" {
-		return errorwrp.NewHttpErrorInternalServerError2("cant execute empty command")
+		return fiber.NewError(fiber.StatusBadRequest, "command is empty")
 	}
 
 	out, err := serverInstance.SendCommand(command)
 	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
 	resp := struct {
@@ -35,5 +35,5 @@ func SendCommandHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpE
 		Output: strings.Split(out, "\n"),
 	}
 
-	return errorwrp.NewJsonHttpResponse(http.StatusOK, resp)
+	return c.Status(fiber.StatusOK).JSON(resp)
 }

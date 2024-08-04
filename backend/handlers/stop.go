@@ -1,24 +1,27 @@
 package handlers
 
 import (
-	"cs-server-controller/ctxex"
-	"cs-server-controller/httpex/errorwrp"
 	"net/http"
+
+	"github.com/gofiber/fiber/v3"
 )
 
-func StopHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, server, _, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
+func StopHandler(c fiber.Ctx) error {
+	lock, server, _, err := GetServerSteamcmdInstances(c)
 	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
+	lock.Lock()
+	defer lock.Unlock()
+
 	if !server.IsRunning() {
-		return errorwrp.NewHttpErrorInternalServerError2("nothing to stop. server is not running")
+		return fiber.NewError(http.StatusInternalServerError, "server is not running")
 	}
 
 	if err := server.Stop(); err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("failed to stop server", err)
+		return NewErrorWithInternal(c, fiber.StatusInternalServerError, "failed to stop server", err)
 	}
 
-	return errorwrp.NewOkHttpResponse()
+	return c.SendStatus(fiber.StatusOK)
 }

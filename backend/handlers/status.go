@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"cs-server-controller/ctxex"
-	"cs-server-controller/httpex/errorwrp"
-	"net/http"
+	"cs-server-manager/constants"
+	"cs-server-manager/status"
+
+	"github.com/gofiber/fiber/v3"
 )
 
 type StatusResponse struct {
@@ -11,15 +12,11 @@ type StatusResponse struct {
 	SteamCmdRunning bool `json:"steamcmd-running"`
 }
 
-func StatusHandler(r *http.Request) (errorwrp.HttpResponse, *errorwrp.HttpError) {
-	_, server, steamcmd, err := ctxex.GetSteamcmdAndServerInstance(r.Context())
+func StatusHandler(c fiber.Ctx) error {
+	status, err := GetFromLocals[*status.Status](c, constants.StatusKey)
 	if err != nil {
-		return errorwrp.NewHttpErrorInternalServerError("internal error", err)
+		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	resp := StatusResponse{
-		ServerRunning:   server.IsRunning(),
-		SteamCmdRunning: steamcmd.IsRunning(),
-	}
-	return errorwrp.NewJsonHttpResponse(http.StatusOK, resp)
+	return c.Status(fiber.StatusOK).JSON(status.Status())
 }
