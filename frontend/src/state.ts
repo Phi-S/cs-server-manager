@@ -1,66 +1,40 @@
-import { reactive } from 'vue'
+import { ref } from 'vue';
+import { ConnectToWebSocket, GetLogs, GetStatus, LogEntry, ServerStatus, Status, SteamcmdStatus, WebSocketMessage, checkIfAllValuesAreDefined } from './api';
 
-export enum ServerStatus {
-    ServerStatusStarted = "server-status-started",
-    ServerStatusStarting = "server-status-starting",
-    ServerStatusStopped = "server-status-stopped",
-    ServerStatusStopping = "server-status-stopping"
+export var status = ref<Status>()
+export var logEntires = ref<LogEntry[]>()
+
+export function IsServerBusy() {
+    return status.value?.server == ServerStatus.ServerStatusStarting ||
+        status.value?.server == ServerStatus.ServerStatusStopping ||
+        status.value?.steamcmd == SteamcmdStatus.SteamcmdStatusUpdating;
 }
 
-export enum SteamcmdStatus {
-    SteamcmdStatusStopped = "steamcmd-status-stopped",
-    SteamcmdStatusUpdating = "steamcmd-status-updating"
-}
-
-function Setup() {
-    fetch("http://localhost:8080/v1/status", {
-        method: "get",
-        headers: {
-            'content-type': 'application/json'
-        }
-    }).then(res => {
-        return res.json()
-    }).then(json => {
-        console.log(json)
-        const hostname: string = json["hostname"]
-        const serverStatus: string = json["server"]
-        const steamcmdStatus: string = json["steamcmd"]
-        const playerCount: string = json["player-count"]
-        const maxPlayerCount: string = json["max-player-count"]
-        const map: string = json["map"]
-
-        state.Hostname = hostname
-        state.ServerStatus = serverStatus as ServerStatus
-        state.SteamcmdStatus = steamcmdStatus as SteamcmdStatus
-        state.PlayerCount = Number(playerCount)
-        state.MaxPlayerCount = Number(maxPlayerCount)
-        state.Map = map
-
-
-    }).catch(ex => {
-        console.log("failed to get initial status values. " + ex)
-    })
+export async function Setup() {
+    status.value = await GetStatus()
+    logEntires.value = await GetLogs()
+    SetupWebSocket()
 }
 
 function SetupWebSocket() {
+    var socket = ConnectToWebSocket()
+    socket.onmessage = (event) => {
+        const msg = JSON.parse(event.data) as WebSocketMessage
 
+        if (msg.message === undefined || msg.type == undefined) {
+            console.log(`unexpected websocket message received ${event.data}`)
+        }
+
+        if (msg.type === "status") {
+            const newStatus = msg.message as Status
+            checkIfAllValuesAreDefined(Object.keys(new Status()) as (keyof Status)[], newStatus)
+            status.value = newStatus
+        } else if (msg.type === "log") {
+            const newLog = msg.message as LogEntry
+            checkIfAllValuesAreDefined(Object.keys(new LogEntry()) as (keyof LogEntry)[], newLog)
+            logEntires.value?.unshift(newLog)
+        } else {
+            console.log(`unexpected websocket message received ${event.data}`)
+        }
+    }
 }
-
-export const state = reactive({
-    IsServerBusy() {
-        return state.ServerStatus == ServerStatus.ServerStatusStarting ||
-            state.ServerStatus == ServerStatus.ServerStatusStopping ||
-            state.SteamcmdStatus == SteamcmdStatus.SteamcmdStatusUpdating;
-    },
-    init() {
-        Setup()
-        SetupWebSocket()
-    },
-    //TODO api request
-    Hostname: "",
-    ServerStatus: ServerStatus.ServerStatusStopped,
-    SteamcmdStatus: SteamcmdStatus.SteamcmdStatusStopped,
-    PlayerCount: 0,
-    MaxPlayerCount: 0,
-    Map: ""
-})

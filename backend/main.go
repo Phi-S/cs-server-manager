@@ -20,9 +20,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/cors"
-	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"golang.org/x/net/websocket"
 )
 
 func main() {
@@ -123,6 +124,7 @@ func main() {
 		startParametersJsonFile,
 		status,
 		userLogWriter,
+		webSocketServer,
 	)
 }
 
@@ -150,6 +152,7 @@ func StartApi(
 	startParametersJsonFile *jsonfile.JsonFile[server.StartParameters],
 	status *status.Status,
 	userLogWriter *logwrt.LogWriter,
+	webSocketServer *WebSocketServer,
 ) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
@@ -182,7 +185,6 @@ func StartApi(
 		},
 	})
 
-	app.Use(recover.New())
 	app.Use(requestid.New())
 	app.Use(func(c fiber.Ctx) error {
 		startTime := time.Now().UTC()
@@ -252,6 +254,8 @@ func StartApi(
 	})
 
 	logGroup.Get("/:countOrSince", handlers.LogsHandler)
+
+	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 
 	log.Fatal(app.Listen(":" + config.HttpPort))
 }

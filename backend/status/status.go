@@ -43,8 +43,8 @@ type InternalStatus struct {
 	Hostname       string         `json:"hostname"`
 	Server         ServerStatus   `json:"server"`
 	Steamcmd       SteamcmdStatus `json:"steamcmd"`
-	PlayerCount    uint8          `json:"player-count"`
-	MaxPlayerCount uint8          `json:"max-player-count"`
+	PlayerCount    uint8          `json:"player_count"`
+	MaxPlayerCount uint8          `json:"max_player_count"`
 	Map            string         `json:"map"`
 }
 

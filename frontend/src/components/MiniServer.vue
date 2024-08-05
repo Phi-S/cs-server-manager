@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ServerStatus, state } from "@/state";
+import { ServerStatus } from '@/api';
+import { IsServerBusy, status } from '@/state';
+
 </script>
 
 <template>
@@ -8,18 +10,18 @@ import { ServerStatus, state } from "@/state";
             <div class="col-11 btn text-start">
                 <div class="row text-nowrap flex-nowrap">
                     <div class="col-12 col-sm-9 text-truncate">
-                        {{ state.Hostname }}
+                        {{ status?.hostname }}
                     </div>
                     <div class="col-3 d-none d-sm-block text-end">
-                        {{ state.Map }}
-                        [ {{ state.PlayerCount }} / {{ state.MaxPlayerCount }}]
+                        {{ status?.map }}
+                        [ {{ status?.player_countasdfasdf }} / {{ status?.max_player_count }}]
                     </div>
                 </div>
             </div>
             <div class="col-1 text-end">
-                <button v-if="state.ServerStatus == ServerStatus.ServerStatusStarted"
+                <button v-if="status?.server == ServerStatus.ServerStatusStarted"
                     class="btn bi-stop fs-2 p-0 m-0"></button>
-                <button v-else-if="state.IsServerBusy()" class="spinner-grow fs-2 p-0 m-0"> </button>
+                <button v-else-if="IsServerBusy()" class="spinner-grow fs-2 p-0 m-0"> </button>
                 <button v-else class="btn bi-play fs-2 p-0 m-0"></button>
             </div>
         </div>

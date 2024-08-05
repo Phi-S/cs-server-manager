@@ -20,7 +20,7 @@ const logFileRolloverSizeMiB = 2
 
 type LogEntry struct {
 	Timestamp time.Time `json:"timestamp"`
-	LogType   string    `json:"log-type"`
+	LogType   string    `json:"log_type"`
 	Message   string    `json:"message"`
 }
 
