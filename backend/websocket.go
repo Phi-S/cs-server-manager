@@ -69,7 +69,7 @@ func (s *WebSocketServer) read(con *websocket.Conn) error {
 			slog.Warn("error reading client message", "error-count", len(errors), "address", con.RemoteAddr(), "error", err)
 
 			if len(errors) >= errorThreshold {
-				return fmt.Errorf("%v errors in a row occured while tring to read from client. Errors %v", len(errors), errors)
+				return fmt.Errorf("%v errors in a row occurred while tying to read from client. Errors %v", len(errors), errors)
 			}
 
 			continue
@@ -102,7 +102,7 @@ func (s *WebSocketServer) broadcast(msg []byte) error {
 				errors = append(
 					errors,
 					fmt.Errorf("failed to send message to client. message: %v | address: %v | error %v",
-						msg, con.RemoteAddr(), err),
+						string(msg), con.RemoteAddr(), err),
 				)
 				errorsLock.Unlock()
 			}
@@ -110,7 +110,7 @@ func (s *WebSocketServer) broadcast(msg []byte) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("%v errors occured. Errors: %v", len(errors), errors)
+		return fmt.Errorf("%v errors occurred. Errors: %v", len(errors), errors)
 	}
 
 	return nil

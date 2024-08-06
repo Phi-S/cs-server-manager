@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -29,16 +28,18 @@ func (s *Instance) copySteamclient() error {
 		return fmt.Errorf("steamclient source not found %w", err)
 	}
 
-	src, err := ioutil.ReadFile(steamClientSrcPath)
+	src, err := os.ReadFile(steamClientSrcPath)
 	if err != nil {
 		return fmt.Errorf("failed to read steamclient source %w", err)
 	}
 
-	if _, err := os.Stat(steamClientDestPath); err == nil {
+	_, err = os.Stat(steamClientDestPath)
+	if err == nil {
 		return nil
 	}
 
 	if !errors.Is(err, os.ErrNotExist) {
+		fmt.Println("err: " + err.Error())
 		return fmt.Errorf("unexpected error while checking if steamclient already exists %w", err)
 	}
 
@@ -46,7 +47,7 @@ func (s *Instance) copySteamclient() error {
 		return fmt.Errorf("failed to create directories for steamclient %w", err)
 	}
 
-	if err := ioutil.WriteFile(steamClientDestPath, src, 0770); err != nil {
+	if err := os.WriteFile(steamClientDestPath, src, 0770); err != nil {
 		return fmt.Errorf("failed to write steamclient file %w", err)
 	}
 

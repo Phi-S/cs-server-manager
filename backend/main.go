@@ -22,7 +22,9 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"github.com/gofiber/fiber/v3/middleware/static"
 	"golang.org/x/net/websocket"
 )
 
@@ -173,7 +175,7 @@ func StartApi(
 			resp := struct {
 				Status    int    `json:"status"`
 				Message   string `json:"message"`
-				RequestId string `json:"request-id"`
+				RequestId string `json:"request_id"`
 			}{
 				Status:    code,
 				Message:   msg,
@@ -185,6 +187,8 @@ func StartApi(
 		},
 	})
 
+	app.Use(recover.New())
+	app.Use(cors.New())
 	app.Use(requestid.New())
 	app.Use(func(c fiber.Ctx) error {
 		startTime := time.Now().UTC()
@@ -227,9 +231,8 @@ func StartApi(
 		}
 		return err
 	})
-	app.Use(cors.New())
 
-	v1 := app.Group("/v1", func(c fiber.Ctx) error {
+	v1 := app.Group("/api/v1", func(c fiber.Ctx) error {
 		c.Locals(constants.ConfigKey, config)
 		c.Locals(constants.ServerSteamcmdLockKey, ServerSteamcmdLock)
 		c.Locals(constants.ServerInstanceKey, serverInstance)
@@ -257,23 +260,7 @@ func StartApi(
 
 	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 
+	app.Get("/*", static.New("./dist"))
+
 	log.Fatal(app.Listen(":" + config.HttpPort))
 }
-
-/*
-
-	// log
-	log := http.NewServeMux()
-	v1.Handle("/log/", func() http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, ctxex.UserLogWriterKey, userLogWriter)
-			http.StripPrefix("/log", log).ServeHTTP(w, r.WithContext(ctx))
-		})
-	}())
-
-	errorwrp.GET(log, "/last", handlers.LogsHandler)
-	errorwrp.GET(log, "/since", handlers.LogsSinceHandler)
-	errorwrp.GET(log, "/files", handlers.LogFilesHandler)
-	errorwrp.GET(log, "/file", handlers.LogFileContentHandler)
-*/

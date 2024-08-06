@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import Buttons from "@/components/Buttons.vue";
+import Console from "@/components/Console.vue";
 import MiniServer from "@/components/MiniServer.vue";
-import { logEntires } from "@/state";
-
-const loc = window.location
+import { connected } from "@/state";
 
 </script>
 
 <template>
+    <div v-if="connected === false"
+        class="position-absolute bg-dark w-100 h-100 text-center fs-1 bg-opacity-75 z-3 pt-3">
+        <div class="bi spinner-border"> </div>
+        connecting...
+    </div>
 
-    <h1>{{ loc }}</h1>
+    <div class="mb-2"></div>
     <MiniServer></MiniServer>
     <div class="mb-2"></div>
     <Buttons></Buttons>
+    <div class="mb-2"></div>
+    <Console></Console>
 
-    <div v-for="log in logEntires">
-        {{ log.message }}
-    </div>
 </template>
-
-<style scoped></style>

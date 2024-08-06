@@ -50,28 +50,19 @@ func GetConfig() (Config, error) {
 
 	const envFile = ".env"
 	if err := godotenv.Load(envFile); err != nil {
-		return Config{}, fmt.Errorf("failed to load %q file", envFile)
+		slog.Info("no .env file present at", "path", envFile)
 	}
 
 	const httpPortKey = "HTTP_PORT"
-	httpPort, err := GetRequiredValueFromEnvAndValidate(httpPortKey, "required,port")
-	if err != nil {
-		return Config{}, err
-	}
+	httpPort := GetEnvWithDefaultValue(httpPortKey, "required,port", "80")
 	slog.Info("config", httpPortKey, httpPort)
 
 	const csPortKey = "CS_PORT"
-	csPort, err := GetRequiredValueFromEnvAndValidate(csPortKey, "required,port")
-	if err != nil {
-		return Config{}, err
-	}
+	csPort := GetEnvWithDefaultValue(csPortKey, "required,port", "27015")
 	slog.Info("config", csPortKey, csPort)
 
 	const dataDirKey = "DATA_DIR"
-	dataDir, err := GetRequiredValueFromEnvAndValidate(dataDirKey, "required,dirpath")
-	if err != nil {
-		return Config{}, err
-	}
+	dataDir := GetEnvWithDefaultValue(dataDirKey, "required,dirpath", "/data")
 	slog.Info("config", dataDirKey, dataDir)
 
 	const logDirKey = "LOG_DIR"

@@ -1,0 +1,112 @@
+
+FROM node:lts-alpine AS vue-builder
+WORKDIR /app
+
+COPY frontend/. .
+RUN npm install
+RUN npm run build
+
+##
+FROM golang:1.22-alpine AS go-builder
+WORKDIR /app
+COPY backend/. ./
+
+RUN go mod download
+RUN go mod verify
+RUN go mod tidy
+RUN go build -v -o cs-server-manager
+
+##
+
+FROM debian:12.6-slim AS deps
+RUN set -x \
+	# Install, update & upgrade packages
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends --no-install-suggests \
+		ca-certificates \
+		lib32z1 \
+        libuuid1 \
+    && apt-get autoremove \
+    && apt-get clean \
+    && find /var/lib/apt/lists/ -type f -delete
+
+RUN dpkg --add-architecture i386
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN echo steam steam/question select "I AGREE" | debconf-set-selections \
+ && echo steam steam/license note '' | debconf-set-selections
+
+RUN sed -i 's/^Components: main$/& contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
+RUN apt update
+RUN apt install -y steamcmd
+
+#FROM busybox:1.36.1-glibc
+FROM alpine:3
+
+#RUN set -x \
+#	# Install, update & upgrade packages
+#	&& apt-get update \
+#	&& apt-get install -y --no-install-recommends --no-install-suggests \
+#		ca-certificates \
+#		lib32z1 \
+#    && apt-get autoremove \
+#    && apt-get clean \
+#    && find /var/lib/apt/lists/ -type f -delete
+
+RUN apk add --no-cache bash ca-certificates libuuid libstdc++ libc6-compat gcompat
+
+#RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
+#&& wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk \
+#&& apk add glibc-2.35-r1.apk
+
+#ENV GLIBC_VERSION 2.35-r1
+# Download and install glibc
+#RUN apk add --update curl && \
+#  curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
+#  curl -Lo glibc.apk "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-${GLIBC_VERSION}.apk" && \
+#  curl -Lo glibc-bin.apk "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VERSION}/glibc-bin-${GLIBC_VERSION}.apk" && \
+#  apk add --force-overwrite glibc-bin.apk glibc.apk && \
+#  /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib && \
+#  echo 'hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4' >> /etc/nsswitch.conf && \
+#  apk del curl && \
+#  rm -rf /var/cache/apk/* glibc.apk glibc-bin.apk
+
+COPY --from=go-builder /app/cs-server-manager /cs-server-manager
+COPY --from=vue-builder /app/dist /dist
+
+#COPY --from=deps /lib/i386-linux-gnu/* /lib/
+#COPY --from=deps /lib/x86_64-linux-gnu/* /lib/
+
+COPY --from=deps /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /server-lib/
+COPY --from=deps /lib/x86_64-linux-gnu/libdl.so.2 /server-lib/
+COPY --from=deps /lib/x86_64-linux-gnu/libpthread.so.0 /server-lib/
+COPY --from=deps /lib/x86_64-linux-gnu/libc.so.6 /server-lib/
+
+COPY --from=deps /lib/i386-linux-gnu/libm.so.6 /steamcmd-lib/
+COPY --from=deps /lib/i386-linux-gnu/librt.so.1 /steamcmd-lib/
+COPY --from=deps /lib/i386-linux-gnu/ld-linux.so.2 /steamcmd-lib/
+COPY --from=deps /lib/i386-linux-gnu/libdl.so.2 /steamcmd-lib/
+COPY --from=deps /lib/i386-linux-gnu/libpthread.so.0 /steamcmd-lib/
+COPY --from=deps /lib/i386-linux-gnu/libc.so.6 /steamcmd-lib/
+
+#COPY --from=deps /lib/i386-linux-gnu/libc_malloc_debug.so.0 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libnss_files.so.2 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libmemusage.so /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libnss_hesiod.so.2 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libstdc++.so.6 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libutil.so.1 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libBrokenLocale.so.1 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libgcc_s.so.1 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libnsl.so.1 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libpcprofile.so /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libstdc++.so.6.0.30 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libanl.so.1 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libidn2.so.0 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libnss_compat.so.2 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libthread_db.so.1 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libidn2.so.0.3.8 /lib
+#COPY --from=deps /lib/i386-linux-gnu/libnss_dns.so.2 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libresolv.so.2 /lib/
+#COPY --from=deps /lib/i386-linux-gnu/libunistring.so.2 /lib/
+
+CMD ["/cs-server-manager"]

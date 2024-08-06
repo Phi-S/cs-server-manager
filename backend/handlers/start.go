@@ -68,7 +68,7 @@ func getStarParameters(startParametersJsonFileInstance *json_file.JsonFile[serve
 		startParameters.StartMap = startMap
 	}
 
-	if maxPlayersString := strings.TrimSpace(query["maxPlayers"]); maxPlayersString != "" {
+	if maxPlayersString := strings.TrimSpace(query["max_player_count"]); maxPlayersString != "" {
 		maxPlayersUint64, err := strconv.ParseUint(maxPlayersString, 10, 8)
 		if err != nil {
 			return nil, err
