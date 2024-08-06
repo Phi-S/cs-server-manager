@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"net/http"
-
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -16,7 +14,7 @@ func StopHandler(c fiber.Ctx) error {
 	defer lock.Unlock()
 
 	if !server.IsRunning() {
-		return fiber.NewError(http.StatusInternalServerError, "server is not running")
+		return c.SendStatus(fiber.StatusOK)
 	}
 
 	if err := server.Stop(); err != nil {

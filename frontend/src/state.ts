@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { ConnectToWebSocket, ErrorResponse, GetLogs, GetStatus, LogEntry, ServerStatus, Status, SteamcmdStatus, WebSocketMessage, checkIfAllValuesAreDefined } from './api/api';
+import { ConnectToWebSocket, ErrorResponse, GetLogs, GetStatus, LogEntry, ServerStatus, Status, SteamcmdStatus, WebSocketMessage, checkIfAllValuesAreDefined } from '@/api/api';
 
 export var connected = ref<boolean>(false)
 export var status = ref<Status>()

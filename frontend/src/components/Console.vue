@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { LogEntry } from '@/api/logs';
-import { SendCommand } from '@/api/send-command';
 import { ServerStatus } from '@/api/status';
+import { SendCommandHandler } from '@/buttonHandler';
 import { logEntires, status } from '@/state';
 import moment from 'moment';
 import { onMounted } from 'vue';
@@ -18,7 +18,6 @@ function GetLogBackground(log: LogEntry): string {
         return "bg-danger bg-opacity-75"
     } else {
         return ""
-
     }
 }
 
@@ -29,18 +28,21 @@ async function SendCommandIfServerIsRunning() {
         return
     }
 
-    await SendCommand(command)
+    if (command.trim().length == 0) {
+        return
+    }
+
+    await SendCommandHandler(command)
 }
 
 onMounted(() => {
     document.getElementById("command-input")?.focus()
 })
-
 </script>
 
 <template>
-    <div class="container-xxl" style="height: calc(100vh - 65px);">
-        <div class="text-nowrap align-items-center d-flex justify-content-center pb-1 pt-1">
+    <div class="container-xxl">
+        <div class="text-nowrap align-items-center d-flex justify-content-center pb-2 pt-1" style="height: 40px;">
             <div class="input-group justify-content-center d-flex w-100">
                 <input id="command-input" v-on:keyup.enter="SendCommandIfServerIsRunning" v-model="command"
                     class="input-group-text" style="width: 70%" placeholder="Server command" />
@@ -50,8 +52,7 @@ onMounted(() => {
             </div>
         </div>
 
-        <div class="overflow-scroll overflow-x-auto rounded-3 border border-2"
-            style="height: calc(100% - 130px); right: 10px">
+        <div class="overflow-x-scroll rounded-3 border border-2" style="height: calc(100vh - 180px);">
             <table class="table table-sm table-striped">
                 <tr v-for="log in logEntires" :class="[GetLogBackground(log), 'border-bottom']">
                     <td class="ps-2 pe-2 pt-1 text-nowrap border-end">
