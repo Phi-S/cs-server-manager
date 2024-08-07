@@ -48,31 +48,31 @@ const maps = [
 </script>
 
 <template>
+    <div class="container-xxl" style="height: 60px">
+        <div class="row input-group flex-nowrap w-100 m-0 h-100">
+            <button @click="StartStop" class="col-3 btn btn-outline-info" :disabled="IsServerBusy()">
+                <div v-if="status?.server == ServerStatus.ServerStatusStopped">Start</div>
+                <div v-else>Stop</div>
+            </button>
+            <button @click="RestartHandler" class="col-3 btn btn-outline-info" :disabled="IsServerBusy()">
+                Restart
+            </button>
+            <button @click="UpdateOrCancelUpdate" class="col-3 btn btn-outline-info" :disabled="disableUpdateButton()">
+                <div v-if="status?.steamcmd == SteamcmdStatus.SteamcmdStatusStopped">Update</div>
+                <div v-else>Cancel Update</div>
+            </button>
+            <button class="col-3 btn btn-outline-info dropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                :disabled="status?.server !== ServerStatus.ServerStatusStarted">
+                Change Map
+            </button>
+            <ul class="dropdown-menu col-3 text-center">
+                <li>
+                    <button v-for="map in maps" @click="changeMap(map)" class="dropdown-item">
+                        {{ map }}
+                    </button>
+                </li>
+            </ul>
 
-    <div class="input-group flex-nowrap w-100 m-0 h-100">
-        <button @click="StartStop" class="col-3 btn btn-outline-info" :disabled="IsServerBusy()">
-            <div v-if="status?.server == ServerStatus.ServerStatusStopped">Start</div>
-            <div v-else>Stop</div>
-        </button>
-        <button @click="RestartHandler" class="col-3 btn btn-outline-info" :disabled="IsServerBusy()">
-            Restart
-        </button>
-        <button @click="UpdateOrCancelUpdate" class="col-3 btn btn-outline-info" :disabled="disableUpdateButton()">
-            <div v-if="status?.steamcmd == SteamcmdStatus.SteamcmdStatusStopped">Update</div>
-            <div v-else>Cancel Update</div>
-        </button>
-        <button class="col-3 btn btn-outline-info dropdown" data-bs-toggle="dropdown" aria-expanded="false"
-            :disabled="status?.server !== ServerStatus.ServerStatusStarted">
-            Change Map
-        </button>
-        <ul class="dropdown-menu col-3 text-center">
-            <li>
-                <button v-for="map in maps" @click="changeMap(map)" class="dropdown-item">
-                    {{ map }}
-                </button>
-            </li>
-        </ul>
-
+        </div>
     </div>
-
 </template>

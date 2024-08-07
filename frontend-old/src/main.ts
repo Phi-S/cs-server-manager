@@ -3,10 +3,9 @@ import "bootstrap-icons/font/bootstrap-icons.css"
 import "bootstrap/dist/css/bootstrap.min.css"
 import './assets/main.css'
 
+import { Setup } from "@/state"
 import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import { Setup } from './state'
+import App from './components/App.vue'
 
 export var API_URL: string
 export var WEBSOCKET_URL: string
@@ -39,8 +38,4 @@ console.log(`WEBSOCKET_URL: ${WEBSOCKET_URL}`)
 
 Setup()
 
-const app = createApp(App)
-
-app.use(router)
-
-app.mount('#app')
+createApp(App).mount('#app')

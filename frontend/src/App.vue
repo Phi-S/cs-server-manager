@@ -1,0 +1,82 @@
+<script setup lang="ts">
+import { RouterView } from 'vue-router';
+import MiniServer from './components/MiniServer.vue';
+
+</script>
+
+<template>
+  <div class="container-lg">
+
+    <header class="mt-2 container-lg mb-4">
+      <div class="row w-100" style="height: 35px;">
+        <button tabindex="1" class="col-1 btn btn-outline-info bi bi-list fs-3" style="width: 45px;" data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
+        </button>
+        <div class="col-10 mx-auto" style="max-width: 600px;">
+          <MiniServer></MiniServer>
+        </div>
+        <div class="col-1" style="width: 45px;">
+
+        </div>
+      </div>
+    </header>
+
+    <hr>
+
+    <div class="offcanvas offcanvas-start" style="width: 20rem;" tabindex="-1" id="offcanvasExample"
+      aria-labelledby="offcanvasExampleLabel">
+      <div class="offcanvas-header">
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <div class="fs-3 mx-2">
+          <RouterLink to="/" active-class="active" class="btn btn-outline-info nav-link d-flex flex-nowrap">
+            <div class="bi bi-house col-2">
+            </div>
+            <div class="col-10">
+              Home
+            </div>
+          </RouterLink>
+          <RouterLink to="/settings" active-class="active" class="btn btn-outline-info nav-link d-flex flex-nowrap">
+            <div class="bi bi-gear col-2">
+            </div>
+            <div class="col-10">
+              Settings
+            </div>
+          </RouterLink>
+          <RouterLink to="/plugins" active-class="active" class="btn btn-outline-info nav-link d-flex flex-nowrap">
+            <div class="bi bi-plugin col-2">
+            </div>
+            <div class="col-10">
+              Plugins
+            </div>
+          </RouterLink>
+          <RouterLink to="/logs" active-class="active" class="btn btn-outline-info nav-link d-flex flex-nowrap">
+            <div class="bi bi-card-text col-2">
+            </div>
+            <div class="col-10">
+              Logs
+            </div>
+          </RouterLink>
+          <RouterLink to="/about" active-class="active" class="btn btn-outline-info nav-link d-flex flex-nowrap">
+            <div class="bi bi-info-square col-2">
+            </div>
+            <div class="col-10">
+              About
+            </div>
+          </RouterLink>
+        </div>
+      </div>
+    </div>
+
+    <RouterView />
+
+  </div>
+</template>
+
+<style scoped>
+header {
+  line-height: 1.5;
+  max-height: 100vh;
+}
+</style>
