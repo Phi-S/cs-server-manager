@@ -2,166 +2,99 @@ package main
 
 import (
 	"cs-server-manager/event"
+	"cs-server-manager/game_events"
 	"cs-server-manager/logwrt"
 	"cs-server-manager/server"
 	"cs-server-manager/steamcmd"
+	"fmt"
 	"log/slog"
+	"time"
 )
 
-func enableEventLogging(serverInstance *server.Instance, steamcmdInstance *steamcmd.Instance) {
-	serverInstance.OnOutput(func(pwd event.PayloadWithData[string]) {
-		slog.Debug("serverInstance", "event", "onOutput", "triggeredAtUtc", pwd.TriggeredAtUtc, "output", pwd.Data)
-		//    fmt.Println(pwd.TriggeredAtUtc.Format(time.RFC3339Nano) + " | SERVER: " + pwd.Data)
-	})
-
-	serverInstance.OnStarting(func(dp event.DefaultPayload) {
-		slog.Debug("serverInstance", "event", "onStarting", "triggeredAtUtc", dp.TriggeredAtUtc)
-	})
-
-	serverInstance.OnStarted(func(dp event.PayloadWithData[server.StartParameters]) {
-		slog.Debug("serverInstance", "event", "onStarted", "triggeredAtUtc", dp.TriggeredAtUtc, "data", dp.Data)
-	})
-
-	serverInstance.OnCrashed(func(pwd event.PayloadWithData[error]) {
-		slog.Debug("serverInstance", "event", "onCrashed", "triggeredAtUtc", pwd.TriggeredAtUtc, "data", pwd.Data)
-	})
-
-	serverInstance.OnStopped(func(dp event.DefaultPayload) {
-		slog.Debug("serverInstance", "event", "onStopped", "triggeredAtUtc", dp.TriggeredAtUtc)
-	})
-
-	steamcmdInstance.OnOutput(func(p event.PayloadWithData[string]) {
-		//        fmt.Println(p.TriggeredAtUtc.String() + " | steamcmdInstance: " + p.Data)
-		slog.Debug("steamcmdInstance", "event", "onOutput", "triggeredAtUtc", p.TriggeredAtUtc, "output", p.Data)
-	})
-
-	steamcmdInstance.OnStarted(func(p event.DefaultPayload) {
-		slog.Debug("steamcmdInstance", "event", "onStarted", "triggeredAtUtc", p.TriggeredAtUtc)
-	})
-
-	steamcmdInstance.OnFinished(func(p event.DefaultPayload) {
-		slog.Debug("steamcmdInstance", "event", "onFinished", "triggeredAtUtc", p.TriggeredAtUtc)
-	})
-
-	steamcmdInstance.OnCancelled(func(p event.DefaultPayload) {
-		slog.Debug("steamcmdInstance", "event", "onCancelled", "triggeredAtUtc", p.TriggeredAtUtc)
-	})
-
-	steamcmdInstance.OnFailed(func(p event.PayloadWithData[error]) {
-		slog.Debug("steamcmdInstance", "event", "onFailed", "triggeredAtUtc", p.TriggeredAtUtc, "data", p.Data)
-	})
-}
-
-func writeEventToLogFileAndWebSocket(
+// Handles server and steamcmd events to log them to the console and log file.
+// Also sends the events to all connected websocket clients
+func logEvents(
 	logWriter *logwrt.LogWriter,
-	webSocketserver *WebSocketServer,
+	webSocketServer *WebSocketServer,
 	serverInstance *server.Instance,
 	steamcmdInstance *steamcmd.Instance,
+	gameEventsInstance *game_events.Instance,
 ) {
-	const systemInfoLogType = "system-info"
-	const systemErrorLogType = "system-error"
-	const serverLogType = "serverInstance"
-	const steamcmdLogType = "steamcmdInstance"
+	handleEvent := func(logType string, timestampUtc time.Time, message string, args ...any) {
+		logEntry := logwrt.NewLogEntry(timestampUtc, logType, message)
 
-	serverInstance.OnStarting(func(p event.DefaultPayload) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemInfoLogType, "serverInstance starting")
+		args = append(args, "timestamp-utc")
+		args = append(args, timestampUtc)
+		args = append(args, "message")
+		args = append(args, message)
+
+		slog.Debug(logType, args...)
+
 		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
+			slog.Error("failed to write log entry", "log_entry", logEntry, "error", err)
 		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
+		if err := webSocketServer.BroadcastLogMessage(logEntry); err != nil {
+			slog.Error("failed to broadcast log message", "log_entry", logEntry, "error", err)
 		}
+	}
+
+	const systemInfoLogType = "system_info"
+	const systemErrorLogType = "system_error"
+	const serverLogType = "server_log"
+	const steamcmdLogType = "steamcmd_log"
+
+	// server
+	serverInstance.OnStarting(func(p event.DefaultPayload) {
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, "server starting")
 	})
 
 	serverInstance.OnStarted(func(p event.PayloadWithData[server.StartParameters]) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemInfoLogType, "serverInstance started")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, "server started")
 	})
 
 	serverInstance.OnStopped(func(p event.DefaultPayload) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemInfoLogType, "serverInstance stopped")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
-
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, "server stopped")
 	})
 
 	serverInstance.OnCrashed(func(p event.PayloadWithData[error]) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemErrorLogType, "serverInstance crashed")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
-
+		handleEvent(systemErrorLogType, p.TriggeredAtUtc, "server crashed with error", "error", p.Data)
 	})
 
 	serverInstance.OnOutput(func(p event.PayloadWithData[string]) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, serverLogType, p.Data)
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(serverLogType, p.TriggeredAtUtc, p.Data)
 	})
 
+	// steamcmd
 	steamcmdInstance.OnStarted(func(p event.DefaultPayload) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemInfoLogType, "steamcmdInstance update starting")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, "server update started")
 	})
 
 	steamcmdInstance.OnFinished(func(p event.DefaultPayload) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemInfoLogType, "steamcmdInstance update finished")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, "server update finished")
 	})
 
 	steamcmdInstance.OnCancelled(func(p event.DefaultPayload) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemInfoLogType, "steamcmdInstance update cancelled")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, "server update cancelled")
 	})
 
 	steamcmdInstance.OnFailed(func(p event.PayloadWithData[error]) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, systemErrorLogType, "steamcmdInstance update failed")
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(systemErrorLogType, p.TriggeredAtUtc, "server update failed with error", "error", p.Data)
 	})
 
 	steamcmdInstance.OnOutput(func(p event.PayloadWithData[string]) {
-		logEntry := logwrt.NewLogEntry(p.TriggeredAtUtc, steamcmdLogType, p.Data)
-		if err := logWriter.WriteLogEntry(logEntry); err != nil {
-			slog.Error("failed to write log entry", "log-entry", logEntry, "error", err)
-		}
-		if err := webSocketserver.BroadcastLogMessage(logEntry); err != nil {
-			slog.Error("failed to brodcast log message", "log-entry", logEntry, "error", err)
-		}
+		handleEvent(steamcmdLogType, p.TriggeredAtUtc, p.Data)
+	})
+
+	// game_events
+	gameEventsInstance.OnMapChanged(func(p event.PayloadWithData[string]) {
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("Map changed to %v", p.Data))
+	})
+
+	gameEventsInstance.OnPlayerConnected(func(p event.PayloadWithData[game_events.PlayerConnected]) {
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("New player '%v'(%v) connected from '%v:%v'", p.Data.Name, p.Data.Id, p.Data.Ip, p.Data.Port))
+	})
+
+	gameEventsInstance.OnPlayerDisconnected(func(p event.PayloadWithData[string]) {
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("Player '%v' disconnected", p.Data))
 	})
 }

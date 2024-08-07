@@ -12,9 +12,9 @@ function TimestampString(timestampUtc: string): string {
 }
 
 function GetLogBackground(log: LogEntry): string {
-    if (log.log_type === "system-info") {
+    if (log.log_type === "system_info") {
         return "bg-success bg-opacity-75"
-    } else if (log.log_type === "system-error") {
+    } else if (log.log_type === "system_error") {
         return "bg-danger bg-opacity-75"
     } else {
         return ""

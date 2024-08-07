@@ -15,7 +15,6 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -38,84 +37,44 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
-		slog.Error("failed to create data directory", "dir", cfg.DataDir, "error", err)
-		os.Exit(1)
-	}
-
-	if err := os.MkdirAll(cfg.ServerDir, os.ModePerm); err != nil {
-		slog.Error("failed to create server directory", "dir", cfg.ServerDir, "error", err)
-		os.Exit(1)
-	}
-
-	if err := os.MkdirAll(cfg.SteamcmdDir, os.ModePerm); err != nil {
-		slog.Error("failed to create steamcmd directory", "dir", cfg.SteamcmdDir, "error", err)
-		os.Exit(1)
-	}
-
-	if err := os.MkdirAll(cfg.LogDir, os.ModePerm); err != nil {
-		slog.Error("failed to create log directory", "dir", cfg.LogDir, "error", err)
-		os.Exit(1)
-	}
+	// this will kill the application if unsuccessful
+	createdRequiredDirs(cfg)
 
 	// this lock is used to prevent collision between the server and steamcmd instance
-	// Fox example the lock is used to prevent the server from being started while being updated.
-	// This can occur if two http request are coming in at the same time
+	// Fox example the lock is used to prevent the server from being started while an steamcmd updated is getting started at the same time.
+	// This can occur if two http request are coming in at the same time and the internal status of the steamcmd and/or server instances is not yet updated
 	ServerSteamcmdLock := sync.Mutex{}
 
-	steamcmdInstance, err := steamcmd.NewInstance(cfg.SteamcmdDir, cfg.ServerDir)
-	if err != nil {
-		slog.Error("failed to create new steamcmd instance", "error", err)
-		os.Exit(1)
-	}
-	defer func() {
-		_ = steamcmdInstance.Cancel()
-		steamcmdInstance.Close()
-	}()
+	steamcmdInstance,
+		serverInstance,
+		startParametersJsonFileHandler,
+		userLogWriter,
+		statusInstance,
+		webSocketServer,
+		gameEventsInstance := createRequiredServices(cfg)
 
-	serverInstance, err := server.NewInstance(cfg.ServerDir, cfg.CsPort, cfg.SteamcmdDir)
-	if err != nil {
-		slog.Error("failed to create new server instance", "error", err)
-		os.Exit(1)
-	}
-	defer func() {
-		_ = serverInstance.Stop()
-		serverInstance.Close()
-	}()
+	serverInstance.OnOutput(func(p event.PayloadWithData[string]) {
+		gameEventsInstance.DetectGameEvent(p.Data)
+	})
 
-	startParametersJsonFile, err := jsonfile.New[server.StartParameters](filepath.Join(cfg.DataDir, "start-parameters.json"), *server.DefaultStartParameters())
-	if err != nil {
-		slog.Error("failed to create new json file service for start-parameter.json", "error", err)
-		os.Exit(1)
-	}
-
-	startParameters, err := startParametersJsonFile.Read()
-	if err != nil {
-		slog.Error("failed to read start-parameter.json", "error", err)
-		os.Exit(1)
-	}
-
-	logDir := filepath.Join(cfg.DataDir, "logs")
-	userLogWriter, err := logwrt.NewLogWriter(logDir, "user-logs")
-	if err != nil {
-		slog.Error("failed to create user logs write", "error", err)
-		os.Exit(1)
-	}
-	defer userLogWriter.Close()
-
-	status := status.NewStatus(startParameters.Hostname, startParameters.MaxPlayers, startParameters.StartMap)
-	status.ChangeStatusOnEvents(serverInstance, steamcmdInstance)
-
-	webSocketServer := NewWebSocketServer()
-	status.OnStatusChanged(func(payload event.DefaultPayload) {
-		currentStatus := status.Status()
-		if err := webSocketServer.Broadcast("status", currentStatus); err != nil {
-			slog.Error("failed to send status message", "status", currentStatus, "error", err)
+	statusEventHandler(statusInstance, serverInstance, steamcmdInstance, gameEventsInstance)
+	statusInstance.OnStatusChanged(func(p event.PayloadWithData[status.InternalStatus]) {
+		if err := webSocketServer.Broadcast("status", p.Data); err != nil {
+			slog.Error("failed to send status message", "status", p.Data, "error", err)
 		}
 	})
 
-	writeEventToLogFileAndWebSocket(userLogWriter, webSocketServer, serverInstance, steamcmdInstance)
-	enableEventLogging(serverInstance, steamcmdInstance)
+	defer func() {
+		_ = steamcmdInstance.Cancel()
+		steamcmdInstance.Close()
+
+		_ = serverInstance.Stop()
+		serverInstance.Close()
+
+		userLogWriter.Close()
+	}()
+
+	logEvents(userLogWriter, webSocketServer, serverInstance, steamcmdInstance, gameEventsInstance)
 
 	////////////////////
 	StartApi(
@@ -123,17 +82,16 @@ func main() {
 		&ServerSteamcmdLock,
 		serverInstance,
 		steamcmdInstance,
-		startParametersJsonFile,
-		status,
+		startParametersJsonFileHandler,
+		statusInstance,
 		userLogWriter,
 		webSocketServer,
 	)
 }
 
 func configureLogger() {
-	logHandler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelDebug,
-		AddSource: true,
+	logHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey {
 				a.Value = slog.StringValue(time.Now().UTC().Format(time.RFC3339Nano))

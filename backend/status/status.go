@@ -2,8 +2,6 @@ package status
 
 import (
 	"cs-server-manager/event"
-	"cs-server-manager/server"
-	"cs-server-manager/steamcmd"
 	"encoding/json"
 	"sync"
 
@@ -11,8 +9,8 @@ import (
 )
 
 func NewStatus(hostname string, maxPlayerCount uint8, startMap string) *Status {
-	return &Status{
-		internalStatus: InternalStatus{
+	instance := Status{
+		internalStatus: &InternalStatus{
 			Hostname:       hostname,
 			Server:         ServerStatusStopped,
 			Steamcmd:       SteamcmdStatusStopped,
@@ -21,6 +19,8 @@ func NewStatus(hostname string, maxPlayerCount uint8, startMap string) *Status {
 			Map:            startMap,
 		},
 	}
+
+	return &instance
 }
 
 type ServerStatus string
@@ -49,26 +49,26 @@ type InternalStatus struct {
 }
 
 type Status struct {
-	internalStatus  InternalStatus
+	internalStatus  *InternalStatus
 	lock            sync.RWMutex
-	onStatusChanged event.Instance
+	onStatusChanged event.InstanceWithData[InternalStatus]
 }
 
-func (s *Status) OnStatusChanged(handler func(payload event.DefaultPayload)) uuid.UUID {
+func (s *Status) OnStatusChanged(handler func(payload event.PayloadWithData[InternalStatus])) uuid.UUID {
 	return s.onStatusChanged.Register(handler)
 }
 
 func (s *Status) Status() InternalStatus {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	return s.internalStatus
+	return *s.internalStatus
 }
 
 func (s *Status) Json() ([]byte, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	result, err := json.Marshal(s.internalStatus)
+	result, err := json.Marshal(*s.internalStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -76,74 +76,13 @@ func (s *Status) Json() ([]byte, error) {
 	return result, nil
 }
 
-func (s *Status) ChangeStatusOnEvents(serverInstance *server.Instance, steamcmdInstance *steamcmd.Instance) {
-	serverInstance.OnOutput(func(pwd event.PayloadWithData[string]) {
-		// TODO: check if player joins regex
-		//slog.Debug("serverInstance", "event", "onOutput", "triggeredAtUtc", pwd.TriggeredAtUtc, "output", pwd.Data)
-		//    fmt.Println(pwd.TriggeredAtUtc.Format(time.RFC3339Nano) + " | SERVER: " + pwd.Data)
-	})
+func (s *Status) Update(ch func(internalStatus *InternalStatus)) {
+	var localCopy InternalStatus
 
-	serverInstance.OnStarting(func(dp event.DefaultPayload) {
-		s.lock.Lock()
-		s.internalStatus.Server = ServerStatusStarting
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
+	s.lock.Lock()
+	ch(s.internalStatus)
+	localCopy = *s.internalStatus
+	s.lock.Unlock()
 
-	serverInstance.OnStarted(func(e event.PayloadWithData[server.StartParameters]) {
-		s.lock.Lock()
-		s.internalStatus.Server = ServerStatusStarted
-		s.internalStatus.Hostname = e.Data.Hostname
-		s.internalStatus.MaxPlayerCount = e.Data.MaxPlayers
-		s.internalStatus.Map = e.Data.StartMap
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
-
-	serverInstance.OnCrashed(func(pwd event.PayloadWithData[error]) {
-		s.lock.Lock()
-		s.internalStatus.Server = ServerStatusStopped
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
-
-	serverInstance.OnStopped(func(dp event.DefaultPayload) {
-		s.lock.Lock()
-		s.internalStatus.Server = ServerStatusStopped
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
-
-	//steamcmdInstance.OnOutput(func(p event.PayloadWithData[string]) {
-	//        fmt.Println(p.TriggeredAtUtc.String() + " | steamcmdInstance: " + p.Data)
-	//slog.Debug("steamcmdInstance", "event", "onOutput", "triggeredAtUtc", p.TriggeredAtUtc, "output", p.Data)
-	//})
-
-	steamcmdInstance.OnStarted(func(p event.DefaultPayload) {
-		s.lock.Lock()
-		s.internalStatus.Steamcmd = SteamcmdStatusUpdating
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
-
-	steamcmdInstance.OnFinished(func(p event.DefaultPayload) {
-		s.lock.Lock()
-		s.internalStatus.Steamcmd = SteamcmdStatusStopped
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
-
-	steamcmdInstance.OnCancelled(func(p event.DefaultPayload) {
-		s.lock.Lock()
-		s.internalStatus.Steamcmd = SteamcmdStatusStopped
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
-
-	steamcmdInstance.OnFailed(func(p event.PayloadWithData[error]) {
-		s.lock.Lock()
-		s.internalStatus.Steamcmd = SteamcmdStatusStopped
-		s.lock.Unlock()
-		s.onStatusChanged.Trigger()
-	})
+	s.onStatusChanged.Trigger(localCopy)
 }

@@ -24,7 +24,7 @@ type IncomingWebSocketMessage struct {
 
 type WebSocketServer struct {
 	connectionLock sync.Mutex
-	connections    []*websocket.Conn
+	connections    map[*websocket.Conn]*websocket.Conn
 
 	OnIncomingMessageEvent    event.InstanceWithData[IncomingWebSocketMessage]
 	OnNewClientConnectedEvent event.InstanceWithData[*websocket.Conn]
@@ -32,7 +32,7 @@ type WebSocketServer struct {
 
 func NewWebSocketServer() *WebSocketServer {
 	return &WebSocketServer{
-		connections: make([]*websocket.Conn, 0),
+		connections: make(map[*websocket.Conn]*websocket.Conn),
 	}
 }
 
@@ -40,12 +40,13 @@ func (s *WebSocketServer) handleWs(con *websocket.Conn) {
 	slog.Debug("web socket client connected", "address", con.RemoteAddr())
 
 	s.connectionLock.Lock()
-	s.connections = append(s.connections, con)
+	s.connections[con] = con
 	s.connectionLock.Unlock()
 
 	s.OnNewClientConnectedEvent.Trigger(con)
 
 	err := s.read(con)
+	delete(s.connections, con)
 	if err == io.EOF {
 		slog.Info("client closed the web socket connection", "address", con.RemoteAddr())
 	} else {
