@@ -58,6 +58,8 @@ func downloadSteamCmd(steamCmdPath string) error {
 	return nil
 }
 
+// TODO: fix handle erros and defer is not optimal
+// https://stackoverflow.com/questions/45617758/proper-way-to-release-resources-with-defer-in-a-loop
 func unzip(gzFilePath, targetDir string) error {
 	gzFile, err := os.Open(gzFilePath)
 	if err != nil {

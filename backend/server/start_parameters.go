@@ -1,12 +1,12 @@
 package server
 
 type StartParameters struct {
-	Hostname        string
-	Password        string
-	StartMap        string
-	MaxPlayers      uint8
-	SteamLoginToken string
-	Additional      []string
+	Hostname        string   `json:"hostname"`
+	Password        string   `json:"password"`
+	StartMap        string   `json:"start_map"`
+	MaxPlayers      uint8    `json:"max_players"`
+	SteamLoginToken string   `json:"steam_login_token"`
+	Additional      []string `json:"additional"`
 }
 
 func DefaultStartParameters() *StartParameters {

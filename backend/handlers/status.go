@@ -13,10 +13,10 @@ type StatusResponse struct {
 }
 
 func StatusHandler(c fiber.Ctx) error {
-	status, err := GetFromLocals[*status.Status](c, constants.StatusKey)
+	statusInstance, err := GetFromLocals[*status.Status](c, constants.StatusKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(status.Status())
+	return c.Status(fiber.StatusOK).JSON(statusInstance.Status())
 }

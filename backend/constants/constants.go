@@ -1,9 +1,5 @@
 package constants
 
-type traceIdKeyType uint
-
-const TraceIdKey traceIdKeyType = 0
-
 type internalErrorKeyType uint
 
 const InternalErrorKey internalErrorKeyType = 0

@@ -3,7 +3,7 @@ package steamcmd
 import (
 	"bufio"
 	"cs-server-manager/event"
-	globalvalidator "cs-server-manager/global_validator"
+	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -45,11 +45,11 @@ func NewInstance(steamcmdDir, serverDir string) (*Instance, error) {
 		return nil, errors.New("another instance already exists. Use only one instance throughout the program")
 	}
 
-	if err := globalvalidator.Instance.Var(steamcmdDir, "required,dir"); err != nil {
+	if err := gvalidator.Instance.Var(steamcmdDir, "required,dir"); err != nil {
 		return nil, fmt.Errorf("steamcmd dir %v is not a valid filepath %w", serverDir, err)
 	}
 
-	if err := globalvalidator.Instance.Var(serverDir, "required,dir"); err != nil {
+	if err := gvalidator.Instance.Var(serverDir, "required,dir"); err != nil {
 		return nil, fmt.Errorf("server dir %v is not a valid filepath %w", serverDir, err)
 	}
 

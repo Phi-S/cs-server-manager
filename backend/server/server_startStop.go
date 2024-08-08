@@ -54,24 +54,6 @@ func (s *Instance) copySteamclient() error {
 	return nil
 }
 
-func (s *Instance) waitForServerToExit(onExitedChannel chan error) {
-	err := <-onExitedChannel
-
-	if s.stop.Load() {
-		s.onStopped.Trigger()
-	} else if err != nil {
-		s.onCrashed.Trigger(fmt.Errorf("server exited unexpectedly. %v", err))
-	} else {
-		s.onCrashed.Trigger(fmt.Errorf("server exited unexpectedly"))
-	}
-
-	s.Close()
-	s.running.Store(false)
-	s.stop.Store(false)
-	s.started.Store(false)
-	slog.Debug("server exited and all resources released")
-}
-
 func (s *Instance) Start(sp StartParameters) error {
 	if s.IsRunning() {
 		return errors.New("server is running")
@@ -82,14 +64,13 @@ func (s *Instance) Start(sp StartParameters) error {
 	s.startStopLock.Lock()
 	defer s.startStopLock.Unlock()
 
-	onExitedChan := make(chan error)
-	go s.waitForServerToExit(onExitedChan)
 	s.running.Store(true)
 	s.onStarting.Trigger()
 
 	if err := s.copySteamclient(); err != nil {
-		onExitedChan <- err
-		return fmt.Errorf("failed to copy steamclient %w", err)
+		err = fmt.Errorf("failed to copy steamclient %w", err)
+		s.onCrashed.Trigger(err)
+		return err
 	}
 
 	password := strings.TrimSpace(sp.Password)
@@ -128,8 +109,9 @@ func (s *Instance) Start(sp StartParameters) error {
 	cmd.Stdin = inR
 
 	if err := cmd.Start(); err != nil {
-		slog.Debug("failed to start server process. " + err.Error())
-		onExitedChan <- err
+		err = fmt.Errorf("failed to start server process %w", err)
+		slog.Debug(err.Error())
+		s.onCrashed.Trigger(err)
 		return err
 	}
 	slog.Debug("server process started")
@@ -138,23 +120,39 @@ func (s *Instance) Start(sp StartParameters) error {
 	s.writer = inW
 	s.reader = outR
 
-	go func() {
-		err := cmd.Wait()
-		onExitedChan <- err
-	}()
-
 	go s.flushServerOutput(inW)
 	go s.readServerOutput(outR)
 
-	if err := s.waitForServerToStart(inW, time.Millisecond*30_000); err != nil {
-		slog.Debug("failed to wait for server to start. " + err.Error())
-		onExitedChan <- err
+	if err := s.waitForServerToStart(inW); err != nil {
+		err = fmt.Errorf("failed to wait for server to start %w", err)
+		slog.Debug(err.Error())
+		s.onCrashed.Trigger(err)
 		return err
 	}
 
 	s.onStarted.Trigger(sp)
 	slog.Info("server started")
+
+	go s.waitForServerToExit(cmd)
 	return nil
+}
+
+func (s *Instance) waitForServerToExit(cmd *exec.Cmd) {
+	err := cmd.Wait()
+
+	if s.stop.Load() {
+		s.onStopped.Trigger()
+	} else if err != nil {
+		s.onCrashed.Trigger(fmt.Errorf("server exited unexpectedly. %v", err))
+	} else {
+		s.onCrashed.Trigger(fmt.Errorf("server exited unexpectedly"))
+	}
+
+	s.Close()
+	s.running.Store(false)
+	s.stop.Store(false)
+	s.started.Store(false)
+	slog.Debug("server exited and all resources released")
 }
 
 func (s *Instance) flushServerOutput(writer *io.PipeWriter) {
@@ -193,7 +191,7 @@ func (s *Instance) readServerOutput(reader *io.PipeReader) {
 	slog.Debug("readServerOutput exited ")
 }
 
-func (s *Instance) waitForServerToStart(write *io.PipeWriter, timeout time.Duration) error {
+func (s *Instance) waitForServerToStart(write *io.PipeWriter) error {
 	slog.Debug("waiting for server to start")
 
 	const startMessage = "#####_SERVER_STARTED"
@@ -203,7 +201,7 @@ func (s *Instance) waitForServerToStart(write *io.PipeWriter, timeout time.Durat
 	handlerUuid := s.onOutput.Register(func(pwd event.PayloadWithData[string]) {
 		if !hostActivated {
 			if strings.HasPrefix(strings.TrimSpace(pwd.Data), "Host activate: Loading") {
-				write.Write([]byte("say " + startMessage + "\n"))
+				_, _ = write.Write([]byte("say " + startMessage + "\n"))
 				hostActivated = true
 				slog.Debug("host activated")
 			}
@@ -216,6 +214,7 @@ func (s *Instance) waitForServerToStart(write *io.PipeWriter, timeout time.Durat
 
 	defer s.onOutput.Deregister(handlerUuid)
 
+	timeout := time.Second * 15
 	startTime := time.Now()
 	for {
 		if time.Since(startTime) >= timeout {

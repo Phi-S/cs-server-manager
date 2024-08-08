@@ -33,12 +33,12 @@ func (g *Instance) OnPlayerDisconnected(handler func(p event.PayloadWithData[str
 }
 
 func (g *Instance) DetectGameEvent(msg string) {
-	g.DetectMapChange(msg)
-	g.DetectPlayerConnected(msg)
-	g.DetectPlayerDisconnected(msg)
+	g.detectMapChange(msg)
+	g.detectPlayerConnected(msg)
+	g.detectPlayerDisconnected(msg)
 }
 
-func (g *Instance) DetectMapChange(msg string) {
+func (g *Instance) detectMapChange(msg string) {
 	regexExpr := `Host activate: Changelevel \((.+)\)`
 	r, err := regexp.Compile(regexExpr)
 	if err != nil {
@@ -54,7 +54,7 @@ func (g *Instance) DetectMapChange(msg string) {
 	g.onMapChanged.Trigger(groups[1])
 }
 
-func (g *Instance) DetectPlayerConnected(msg string) {
+func (g *Instance) detectPlayerConnected(msg string) {
 	regexExpr := `CServerSideClientBase::Connect\( name='(.+)', userid=(\d), fake=\d, chan->addr=(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}):(\d{1,5}) \)`
 	r, err := regexp.Compile(regexExpr)
 	if err != nil {
@@ -86,7 +86,7 @@ func (g *Instance) DetectPlayerConnected(msg string) {
 	})
 }
 
-func (g *Instance) DetectPlayerDisconnected(msg string) {
+func (g *Instance) detectPlayerDisconnected(msg string) {
 	regexExpr := `SV:  Dropped client '(.+)' from server\(.+`
 	r, err := regexp.Compile(regexExpr)
 	if err != nil {

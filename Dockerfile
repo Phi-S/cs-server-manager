@@ -1,5 +1,5 @@
 ## building vuejs app
-FROM node:lts-alpine AS vue-builder
+FROM node:lts AS vue-builder
 WORKDIR /app
 
 COPY frontend/. .
@@ -7,7 +7,7 @@ RUN npm install
 RUN npm run build
 
 ## building go app
-FROM golang:1.22-alpine AS go-builder
+FROM golang:1.22 AS go-builder
 WORKDIR /app
 COPY backend/. ./
 

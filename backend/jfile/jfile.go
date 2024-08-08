@@ -1,9 +1,10 @@
-package json_file
+package jfile
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"sync"
@@ -11,7 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func New[T any](pathIn string, defaultValueIfNoExist T) (*JsonFile[T], error) {
+func New[T any](pathIn string, defaultValueIfNoExist T) (*Instance[T], error) {
 	v := validator.New(validator.WithRequiredStructEnabled())
 
 	if err := v.Var(pathIn, "required,filepath"); err != nil {
@@ -21,7 +22,7 @@ func New[T any](pathIn string, defaultValueIfNoExist T) (*JsonFile[T], error) {
 	var tType T
 	requiredType := reflect.TypeOf(tType)
 
-	jsonFileInstance := &JsonFile[T]{
+	jsonFileInstance := &Instance[T]{
 		path:     pathIn,
 		tType:    requiredType,
 		validate: v,
@@ -45,7 +46,7 @@ func New[T any](pathIn string, defaultValueIfNoExist T) (*JsonFile[T], error) {
 	return jsonFileInstance, nil
 }
 
-type JsonFile[T any] struct {
+type Instance[T any] struct {
 	path string
 
 	tType    reflect.Type
@@ -53,15 +54,7 @@ type JsonFile[T any] struct {
 	validate *validator.Validate
 }
 
-func (j *JsonFile[T]) GetPath() string {
-	return j.path
-}
-
-func (j *JsonFile[T]) GetType() reflect.Type {
-	return j.tType
-}
-
-func (j *JsonFile[T]) Write(data T) error {
+func (j *Instance[T]) Write(data T) error {
 	dataAsJson, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
 		return err
@@ -77,10 +70,13 @@ func (j *JsonFile[T]) Write(data T) error {
 	return nil
 }
 
-func (j *JsonFile[T]) Read() (*T, error) {
+func (j *Instance[T]) Read() (*T, error) {
 	j.lock.Lock()
 	defer j.lock.Unlock()
+	return j.readInternal()
+}
 
+func (j *Instance[T]) readInternal() (*T, error) {
 	content, err := os.ReadFile(j.path)
 	if err != nil {
 		return nil, err
@@ -102,4 +98,27 @@ func (j *JsonFile[T]) Read() (*T, error) {
 	}
 
 	return data, nil
+}
+
+func (j *Instance[T]) Update(updateFunc func(currentData *T)) error {
+	j.lock.Lock()
+	defer j.lock.Unlock()
+
+	data, err := j.readInternal()
+	if err != nil {
+		return fmt.Errorf("failed to read current json file %w", err)
+	}
+
+	updateFunc(data)
+
+	dataAsJson, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal json %w", err)
+	}
+
+	if err := os.WriteFile(j.path, dataAsJson, 0777); err != nil {
+		return fmt.Errorf("failed to write json file %w", err)
+	}
+
+	return nil
 }

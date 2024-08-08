@@ -1,34 +1,41 @@
 package config
 
 import (
-	globalvalidator "cs-server-manager/global_validator"
-	"fmt"
+	globalvalidator "cs-server-manager/gvalidator"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	HttpPort    string
-	CsPort      string
-	DataDir     string
-	LogDir      string
-	ServerDir   string
-	SteamcmdDir string
+	HttpPort       string
+	CsPort         string
+	DataDir        string
+	LogDir         string
+	ServerDir      string
+	SteamcmdDir    string
+	DisableWebsite bool
 }
 
-func GetRequiredValueFromEnvAndValidate(key string, validationString string) (string, error) {
-	value := os.Getenv(key)
-	value = strings.TrimSpace(value)
+func GetEnvWithDefaultValueBool(key string, validationString string, defaultValue bool) bool {
+	defaultValueStr := strconv.FormatBool(defaultValue)
+	value := GetEnvWithDefaultValue(key, validationString, defaultValueStr)
 
-	if err := globalvalidator.Instance.Var(value, validationString); err != nil {
-		return "", fmt.Errorf("validation of %q with the validation string %q and value %q returned error: %q", key, validationString, value, err)
+	if value == defaultValueStr {
+		return defaultValue
 	}
 
-	return value, nil
+	valueBool, err := strconv.ParseBool(value)
+	if err != nil {
+		slog.Warn("failed to parse value from env as bool", "value", value)
+		return defaultValue
+	}
+
+	return valueBool
 }
 
 func GetEnvWithDefaultValue(key string, validationString string, defaultValue string) string {
@@ -40,6 +47,7 @@ func GetEnvWithDefaultValue(key string, validationString string, defaultValue st
 	}
 
 	if err := globalvalidator.Instance.Var(value, validationString); err != nil {
+		slog.Warn("validation failed. Returning default value", "validation_string", validationString, "env_key", key, "default_value", defaultValue)
 		return defaultValue
 	}
 
@@ -54,28 +62,32 @@ func GetConfig() (Config, error) {
 	}
 
 	const httpPortKey = "HTTP_PORT"
-	httpPort := GetEnvWithDefaultValue(httpPortKey, "required,port", "80")
+	httpPort := GetEnvWithDefaultValue(httpPortKey, "port", "80")
 	slog.Info("config", httpPortKey, httpPort)
 
 	const csPortKey = "CS_PORT"
-	csPort := GetEnvWithDefaultValue(csPortKey, "required,port", "27015")
+	csPort := GetEnvWithDefaultValue(csPortKey, "port", "27015")
 	slog.Info("config", csPortKey, csPort)
 
 	const dataDirKey = "DATA_DIR"
-	dataDir := GetEnvWithDefaultValue(dataDirKey, "required,dirpath", "/data")
+	dataDir := GetEnvWithDefaultValue(dataDirKey, "dirpath", "/data")
 	slog.Info("config", dataDirKey, dataDir)
 
 	const logDirKey = "LOG_DIR"
-	logDir := GetEnvWithDefaultValue(logDirKey, "required,dirpath", filepath.Join(dataDir, "logs"))
+	logDir := GetEnvWithDefaultValue(logDirKey, "dirpath", filepath.Join(dataDir, "logs"))
 	slog.Info("config", logDirKey, logDir)
 
 	const serverDirKey = "SERVER_DIR"
-	serverDir := GetEnvWithDefaultValue(serverDirKey, "required,dirpath", filepath.Join(dataDir, "server"))
+	serverDir := GetEnvWithDefaultValue(serverDirKey, "dirpath", filepath.Join(dataDir, "server"))
 	slog.Info("config", serverDirKey, serverDir)
 
 	const steamcmdDirKey = "STEAMCMD_DIR"
-	steamcmdDir := GetEnvWithDefaultValue(steamcmdDirKey, "required,dirpath", filepath.Join(dataDir, "steamcmd"))
+	steamcmdDir := GetEnvWithDefaultValue(steamcmdDirKey, "dirpath", filepath.Join(dataDir, "steamcmd"))
 	slog.Info("config", steamcmdDirKey, steamcmdDir)
+
+	const disableWebsiteKey = "DISABLE_WEBSITE"
+	disableWebsite := GetEnvWithDefaultValueBool(disableWebsiteKey, "boolean", false)
+	slog.Info("config", disableWebsiteKey, disableWebsite)
 
 	return Config{
 		httpPort,
@@ -84,5 +96,6 @@ func GetConfig() (Config, error) {
 		logDir,
 		serverDir,
 		steamcmdDir,
+		disableWebsite,
 	}, nil
 }

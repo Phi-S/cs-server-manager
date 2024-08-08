@@ -1,7 +1,7 @@
-package globalvalidator_test
+package gvalidator_test
 
 import (
-	globalvalidator "cs-server-manager/global_validator"
+	globalvalidator "cs-server-manager/gvalidator"
 	"testing"
 )
 
@@ -9,8 +9,7 @@ func init() {
 	globalvalidator.Init()
 }
 
-func TestPortTag_Ok(t *testing.T) {
-
+func TestGlobalValidator_PortTag_Ok(t *testing.T) {
 	type testInput struct {
 		port             uint32
 		shouldThrowError bool

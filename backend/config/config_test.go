@@ -2,7 +2,7 @@ package config_test
 
 import (
 	"cs-server-manager/config"
-	globalvalidator "cs-server-manager/global_validator"
+	globalvalidator "cs-server-manager/gvalidator"
 	"os"
 	"testing"
 )
@@ -11,17 +11,20 @@ func init() {
 	globalvalidator.Init()
 }
 
-func TestGetRequiredValueFromEnvAndValidate(t *testing.T) {
+func TestGetEnvWithDefaultValue_port_OK(t *testing.T) {
 	testEnvKey := "test-env-key"
 	testEnvValue := "65535"
 
-	os.Setenv(testEnvKey, testEnvValue)
-	defer os.Unsetenv(testEnvKey)
-
-	value, err := config.GetRequiredValueFromEnvAndValidate(testEnvKey, "required,port")
+	err := os.Setenv(testEnvKey, testEnvValue)
 	if err != nil {
-		t.Error(err)
-	} else if value != testEnvValue {
-		t.Error("returned value dose not match expected value")
+		t.Fatalf(err.Error())
+	}
+	defer func(key string) {
+		_ = os.Unsetenv(key)
+	}(testEnvKey)
+
+	value := config.GetEnvWithDefaultValue(testEnvKey, "port", "1234")
+	if value != testEnvValue {
+		t.Fatalf("unexpected value received %v. expected value: %v", value, testEnvValue)
 	}
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"cs-server-manager/config"
 	"cs-server-manager/game_events"
-	jsonfile "cs-server-manager/jsonfile"
+	"cs-server-manager/jfile"
 	"cs-server-manager/logwrt"
 	"cs-server-manager/server"
 	"cs-server-manager/status"
@@ -38,7 +38,7 @@ func createdRequiredDirs(cfg config.Config) {
 func createRequiredServices(cfg config.Config) (
 	*steamcmd.Instance,
 	*server.Instance,
-	*jsonfile.JsonFile[server.StartParameters],
+	*jfile.Instance[server.StartParameters],
 	*logwrt.LogWriter,
 	*status.Status,
 	*WebSocketServer,
@@ -57,7 +57,7 @@ func createRequiredServices(cfg config.Config) (
 	}
 
 	startParametersJsonPath := filepath.Join(cfg.DataDir, "start-parameters.json")
-	startParametersJsonFile, err := jsonfile.New[server.StartParameters](startParametersJsonPath, *server.DefaultStartParameters())
+	startParametersJsonFile, err := jfile.New[server.StartParameters](startParametersJsonPath, *server.DefaultStartParameters())
 	if err != nil {
 		slog.Error("failed to create new json file service for start-parameter.json", "path", startParametersJsonPath, "error", err)
 		os.Exit(1)
@@ -76,10 +76,10 @@ func createRequiredServices(cfg config.Config) (
 		os.Exit(1)
 	}
 
-	status := status.NewStatus(startParameters.Hostname, startParameters.MaxPlayers, startParameters.StartMap)
+	statusInstance := status.NewStatus(startParameters.Hostname, startParameters.MaxPlayers, startParameters.StartMap)
 	webSocketServer := NewWebSocketServer()
 
 	gameEventsInstance := game_events.Instance{}
 
-	return steamcmdInstance, serverInstance, startParametersJsonFile, userLogWriter, status, webSocketServer, &gameEventsInstance
+	return steamcmdInstance, serverInstance, startParametersJsonFile, userLogWriter, statusInstance, webSocketServer, &gameEventsInstance
 }

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"cs-server-manager/constants"
-	json_file "cs-server-manager/jsonfile"
+	"cs-server-manager/jfile"
 	"cs-server-manager/server"
 	"fmt"
 	"log/slog"
@@ -29,7 +29,7 @@ func StartHandler(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "server is already running")
 	}
 
-	startParameterJsonFile, err := GetFromLocals[*json_file.JsonFile[server.StartParameters]](c, constants.StartParametersJsonFileKey)
+	startParameterJsonFile, err := GetFromLocals[*jfile.Instance[server.StartParameters]](c, constants.StartParametersJsonFileKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
@@ -50,7 +50,7 @@ func StartHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-func getStarParameters(startParametersJsonFileInstance *json_file.JsonFile[server.StartParameters], query map[string]string) (*server.StartParameters, error) {
+func getStarParameters(startParametersJsonFileInstance *jfile.Instance[server.StartParameters], query map[string]string) (*server.StartParameters, error) {
 	startParameters, err := startParametersJsonFileInstance.Read()
 	if err != nil {
 		return nil, err

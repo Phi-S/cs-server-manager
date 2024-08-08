@@ -2,7 +2,7 @@ package server
 
 import (
 	"cs-server-manager/event"
-	globalvalidator "cs-server-manager/global_validator"
+	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"io"
@@ -41,15 +41,15 @@ func NewInstance(serverDir, port, steamcmdDir string) (*Instance, error) {
 		return nil, errors.New("another instance already exists. Only one instance should be used throughout the program")
 	}
 
-	if err := globalvalidator.Instance.Var(serverDir, "required,dir"); err != nil {
+	if err := gvalidator.Instance.Var(serverDir, "required,dir"); err != nil {
 		return nil, fmt.Errorf("server dir %v is not a valid filepath %w", serverDir, err)
 	}
 
-	if err := globalvalidator.Instance.Var(port, "required,port"); err != nil {
+	if err := gvalidator.Instance.Var(port, "required,port"); err != nil {
 		return nil, fmt.Errorf("port %q is not a valid filepath %w", port, err)
 	}
 
-	if err := globalvalidator.Instance.Var(steamcmdDir, "required,dir"); err != nil {
+	if err := gvalidator.Instance.Var(steamcmdDir, "required,dir"); err != nil {
 		return nil, fmt.Errorf("steamcmd dir %v is not a valid filepath %w", steamcmdDir, err)
 	}
 

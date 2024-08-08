@@ -4,24 +4,25 @@ import (
 	"cs-server-manager/config"
 	"cs-server-manager/constants"
 	"cs-server-manager/event"
-	globalvalidator "cs-server-manager/global_validator"
+	"cs-server-manager/gvalidator"
 	"cs-server-manager/handlers"
-	jsonfile "cs-server-manager/jsonfile"
+	"cs-server-manager/jfile"
 	"cs-server-manager/logwrt"
 	"cs-server-manager/server"
 	"cs-server-manager/status"
 	"cs-server-manager/steamcmd"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"runtime/debug"
 	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/cors"
-	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/gofiber/fiber/v3/middleware/static"
 	"golang.org/x/net/websocket"
@@ -29,7 +30,7 @@ import (
 
 func main() {
 	configureLogger()
-	globalvalidator.Init()
+	gvalidator.Init()
 
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -53,16 +54,19 @@ func main() {
 		webSocketServer,
 		gameEventsInstance := createRequiredServices(cfg)
 
+	// register game event detection
 	serverInstance.OnOutput(func(p event.PayloadWithData[string]) {
 		gameEventsInstance.DetectGameEvent(p.Data)
 	})
 
-	statusEventHandler(statusInstance, serverInstance, steamcmdInstance, gameEventsInstance)
+	updateStatusOnEvents(statusInstance, serverInstance, steamcmdInstance, gameEventsInstance)
 	statusInstance.OnStatusChanged(func(p event.PayloadWithData[status.InternalStatus]) {
 		if err := webSocketServer.Broadcast("status", p.Data); err != nil {
 			slog.Error("failed to send status message", "status", p.Data, "error", err)
 		}
 	})
+
+	logEvents(userLogWriter, webSocketServer, serverInstance, steamcmdInstance, gameEventsInstance)
 
 	defer func() {
 		_ = steamcmdInstance.Cancel()
@@ -73,8 +77,6 @@ func main() {
 
 		userLogWriter.Close()
 	}()
-
-	logEvents(userLogWriter, webSocketServer, serverInstance, steamcmdInstance, gameEventsInstance)
 
 	////////////////////
 	StartApi(
@@ -109,7 +111,7 @@ func StartApi(
 	ServerSteamcmdLock *sync.Mutex,
 	serverInstance *server.Instance,
 	steamcmdInstance *steamcmd.Instance,
-	startParametersJsonFile *jsonfile.JsonFile[server.StartParameters],
+	startParametersJsonFile *jfile.Instance[server.StartParameters],
 	status *status.Status,
 	userLogWriter *logwrt.LogWriter,
 	webSocketServer *WebSocketServer,
@@ -145,7 +147,6 @@ func StartApi(
 		},
 	})
 
-	app.Use(recover.New())
 	app.Use(cors.New())
 	app.Use(requestid.New())
 	app.Use(func(c fiber.Ctx) error {
@@ -185,9 +186,23 @@ func StartApi(
 				"duration", duration,
 				"response-message", responseMessage,
 				"internal-error", internalError,
+				"error", err,
 			)
 		}
 		return err
+	})
+
+	app.Use(func(c fiber.Ctx) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				var ok bool
+				if err, ok = r.(error); !ok {
+					err = fmt.Errorf("handler paniced: %v | %s", r, debug.Stack())
+				}
+			}
+		}()
+
+		return c.Next()
 	})
 
 	v1 := app.Group("/api/v1", func(c fiber.Ctx) error {
@@ -209,6 +224,9 @@ func StartApi(
 	v1.Post("/update", handlers.UpdateHandler)
 	v1.Post("/update/cancel", handlers.CancelUpdateHandler)
 
+	v1.Get("/settings", handlers.GetSettingsHandler)
+	v1.Post("/settings", handlers.UpdateSettingsHandler)
+
 	logGroup := v1.Group("/log", func(c fiber.Ctx) error {
 		c.Locals(constants.UserLogWriterKey, userLogWriter)
 		return c.Next()
@@ -218,7 +236,9 @@ func StartApi(
 
 	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 
-	app.Get("/*", static.New("./dist"))
+	if !config.DisableWebsite {
+		app.Get("/*", static.New("./dist"))
+	}
 
 	log.Fatal(app.Listen(":" + config.HttpPort))
 }

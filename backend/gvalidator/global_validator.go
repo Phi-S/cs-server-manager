@@ -1,7 +1,9 @@
-package globalvalidator
+package gvalidator
 
 import (
 	"fmt"
+	"log/slog"
+	"os"
 	"reflect"
 	"strconv"
 
@@ -10,8 +12,14 @@ import (
 
 var Instance = validator.New(validator.WithRequiredStructEnabled())
 
+var isInitialized = false
+
 func Init() {
-	Instance.RegisterValidation("port", func(fl validator.FieldLevel) bool {
+	if isInitialized {
+		return
+	}
+
+	err := Instance.RegisterValidation("port", func(fl validator.FieldLevel) bool {
 		field := fl.Field()
 
 		var v uint64
@@ -33,4 +41,11 @@ func Init() {
 
 		return v >= 1 && v <= 65535
 	})
+
+	if err != nil {
+		slog.Error("failed to register port tag at gvalidator", "error", err)
+		os.Exit(1)
+	}
+
+	isInitialized = true
 }

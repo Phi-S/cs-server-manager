@@ -1,7 +1,7 @@
-package json_file_test
+package jfile_test
 
 import (
-	json_file "cs-server-manager/jsonfile"
+	jfile "cs-server-manager/jfile"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,7 +14,7 @@ type TestJsonFile struct {
 	Bool  bool   `json:"bool" validate:"required"`
 }
 
-func TestNew_OK_CreateNewJsonFile(t *testing.T) {
+func TestNew_CreateNewJsonFile_Ok(t *testing.T) {
 	testDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
@@ -22,7 +22,7 @@ func TestNew_OK_CreateNewJsonFile(t *testing.T) {
 
 	testJsonFilePath := filepath.Join(testDir, "test-json.json")
 	t.Logf("testing for json file %q", testJsonFilePath)
-	_, err = json_file.New[TestJsonFile](testJsonFilePath, TestJsonFile{
+	_, err = jfile.New[TestJsonFile](testJsonFilePath, TestJsonFile{
 		Name:  "name_test",
 		Count: 5,
 		Bool:  true,
@@ -32,7 +32,7 @@ func TestNew_OK_CreateNewJsonFile(t *testing.T) {
 	}
 }
 
-func TestNew_FAIL_NotAValidFilePath(t *testing.T) {
+func TestNew_NotAValidFilePath_Fail(t *testing.T) {
 	testDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
@@ -40,7 +40,7 @@ func TestNew_FAIL_NotAValidFilePath(t *testing.T) {
 
 	testJsonFilePath := filepath.Join(testDir, "test-json.json/##")
 	t.Logf("testing for json file %q", testJsonFilePath)
-	_, err = json_file.New[TestJsonFile](testJsonFilePath, TestJsonFile{
+	_, err = jfile.New[TestJsonFile](testJsonFilePath, TestJsonFile{
 		Name:  "name_test",
 		Count: 5,
 		Bool:  true,
@@ -52,7 +52,7 @@ func TestNew_FAIL_NotAValidFilePath(t *testing.T) {
 	}
 }
 
-func TestNew_FAIL_MalformedJsonTooManyField(t *testing.T) {
+func TestNew_MalformedJsonTooManyField_Fail(t *testing.T) {
 	testDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
@@ -67,7 +67,7 @@ func TestNew_FAIL_MalformedJsonTooManyField(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = json_file.New[TestJsonFile](testJsonFilePath, TestJsonFile{
+	_, err = jfile.New[TestJsonFile](testJsonFilePath, TestJsonFile{
 		Name:  "name_test",
 		Count: 5,
 		Bool:  true,
@@ -82,7 +82,7 @@ func TestNew_FAIL_MalformedJsonTooManyField(t *testing.T) {
 	}
 }
 
-func TestNew_FAIL_MalformedJsonMissingField(t *testing.T) {
+func TestNew_MalformedJsonMissingField_Fail(t *testing.T) {
 	testDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
@@ -97,7 +97,7 @@ func TestNew_FAIL_MalformedJsonMissingField(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = json_file.New[TestJsonFile](testJsonFilePath, TestJsonFile{
+	_, err = jfile.New[TestJsonFile](testJsonFilePath, TestJsonFile{
 		Name:  "name_test",
 		Count: 5,
 		Bool:  true,
@@ -111,7 +111,7 @@ func TestNew_FAIL_MalformedJsonMissingField(t *testing.T) {
 	}
 }
 
-func TestNew_OK_ReadExistingJsonFile(t *testing.T) {
+func TestNew_ReadExistingJsonFile_Ok(t *testing.T) {
 	testDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Error(err)
@@ -126,7 +126,7 @@ func TestNew_OK_ReadExistingJsonFile(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = json_file.New[TestJsonFile](testJsonFilePath, TestJsonFile{
+	_, err = jfile.New[TestJsonFile](testJsonFilePath, TestJsonFile{
 		Name:  "name_test",
 		Count: 5,
 		Bool:  true,

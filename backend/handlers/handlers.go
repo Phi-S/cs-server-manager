@@ -25,12 +25,17 @@ func NewInternalServerErrorWithInternal(c fiber.Ctx, err error) error {
 func GetFromLocals[T any](c fiber.Ctx, key any) (T, error) {
 	var zeroResult T
 
-	value, ok := c.Locals(key).(T)
-	if !ok {
-		return zeroResult, fmt.Errorf("failed to get %T from locals", key)
+	value := c.Locals(key)
+	if value == nil {
+		return zeroResult, fmt.Errorf("key %T not found in locals", key)
 	}
 
-	return value, nil
+	parsedValue, ok := value.(T)
+	if !ok {
+		return zeroResult, fmt.Errorf("failed to parse value in locals with key %T", key)
+	}
+
+	return parsedValue, nil
 }
 
 func GetServerSteamcmdInstances(c fiber.Ctx) (*sync.Mutex, *server.Instance, *steamcmd.Instance, error) {
@@ -40,15 +45,15 @@ func GetServerSteamcmdInstances(c fiber.Ctx) (*sync.Mutex, *server.Instance, *st
 		return nil, nil, nil, err
 	}
 
-	server, err := GetFromLocals[*server.Instance](c, constants.ServerInstanceKey)
+	serverInstance, err := GetFromLocals[*server.Instance](c, constants.ServerInstanceKey)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	steamcmd, err := GetFromLocals[*steamcmd.Instance](c, constants.SteamCmdInstanceKey)
+	steamcmdInstance, err := GetFromLocals[*steamcmd.Instance](c, constants.SteamCmdInstanceKey)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	return lock, server, steamcmd, nil
+	return lock, serverInstance, steamcmdInstance, nil
 }
