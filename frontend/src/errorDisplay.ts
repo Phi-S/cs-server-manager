@@ -1,5 +1,4 @@
-import { ref } from "vue";
-import type { ErrorResponse } from "./api/api";
+import {ref} from "vue";
 
 export var shouldShow = ref(false)
 export var title = ref("")
@@ -9,7 +8,7 @@ export function Show(titleIn: string, ...message: string[]) {
     title.value = titleIn
     messages.value = message
     shouldShow.value = true
-} 
+}
 
 export function Hide() {
     title.value = ""

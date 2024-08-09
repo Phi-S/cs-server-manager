@@ -1,9 +1,12 @@
-import { ref } from 'vue';
-import { ConnectToWebSocket, ErrorResponse, GetLogs, GetStatus, LogEntry, ServerStatus, Status, SteamcmdStatus, WebSocketMessage, checkIfAllValuesAreDefined } from '@/api/api';
+import {ref} from 'vue';
+import type {Status} from "@/api/server";
+import {getLogs, getStatus, LogEntry, ServerStatus, SteamcmdStatus} from "@/api/server";
+import {ConnectToWebSocket, WebSocketMessage} from "@/api/api";
+
 
 export var connected = ref<boolean>(false)
 export var status = ref<Status>()
-export var logEntires = ref<LogEntry[]>()
+export var logEntries = ref<LogEntry[]>()
 
 export function IsServerBusy() {
     return status.value?.server == ServerStatus.ServerStatusStarting ||
@@ -28,21 +31,12 @@ export async function Setup() {
 }
 
 async function initStatusAndLogs() {
-    const newStatus = await GetStatus()
-    if (newStatus instanceof ErrorResponse) {
-        throw new Error(`failed to initialize status. ${newStatus}`)
-    }
-    status.value = newStatus
-
-    const newLogs = await GetLogs()
-    if (newLogs instanceof ErrorResponse) {
-        throw new Error(`failed to initialize logs. ${newLogs}`)
-    }
-    logEntires.value = newLogs
+    status.value = await getStatus()
+    logEntries.value = await getLogs(500)
 }
 
 function SetupWebSocket() {
-    var socket = ConnectToWebSocket()
+    const socket = ConnectToWebSocket();
 
     socket.onerror = async (event) => {
         socket.close()
@@ -57,6 +51,7 @@ function SetupWebSocket() {
     }
 
     socket.onmessage = (event) => {
+        console.log("ws: " + event.data)
         const msg = JSON.parse(event.data) as WebSocketMessage
 
         if (msg.message === undefined || msg.type == undefined) {
@@ -64,13 +59,14 @@ function SetupWebSocket() {
         }
 
         if (msg.type === "status") {
-            const newStatus = msg.message as Status
-            checkIfAllValuesAreDefined(Object.keys(new Status()) as (keyof Status)[], newStatus)
-            status.value = newStatus
+            status.value = msg.message as Status
         } else if (msg.type === "log") {
             const newLog = msg.message as LogEntry
-            checkIfAllValuesAreDefined(Object.keys(new LogEntry()) as (keyof LogEntry)[], newLog)
-            logEntires.value?.unshift(newLog)
+            if (logEntries.value === undefined) {
+                logEntries.value = [newLog]
+            } else {
+                logEntries.value.unshift(newLog)
+            }
         } else {
             console.log(`unexpected websocket message received ${event.data}`)
         }

@@ -1,7 +1,7 @@
 package jfile_test
 
 import (
-	jfile "cs-server-manager/jfile"
+	"cs-server-manager/jfile"
 	"fmt"
 	"os"
 	"path/filepath"

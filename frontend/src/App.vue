@@ -1,16 +1,27 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import {RouterView} from 'vue-router';
 import MiniServer from './components/MiniServer.vue';
+import ErrorDisplay from "@/components/ErrorDisplay.vue";
+import router from "@/router";
 
+function navigateToHome() {
+  router.push("/")
+}
 </script>
 
 <template>
   <div class="container-lg">
 
+    <ErrorDisplay></ErrorDisplay>
+
     <header class="mt-2 container-lg mb-4">
-      <div class="row w-100" style="height: 35px;">
-        <button tabindex="1" class="col-1 btn btn-outline-info bi bi-list fs-3" style="width: 45px;" data-bs-toggle="offcanvas"
-          data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
+      <div class="row w-100" style="height: 40px;">
+        <img @click="navigateToHome" class="mt-1 me-4 border-end" src="@/assets/logo.png" alt="logo" href="/"
+             style="height: 40px; width: 60px; cursor: pointer"/>
+
+        <button tabindex="1" class="col-1 btn btn-outline-info bi bi-list fs-3" style="width: 45px;"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#navbar" aria-controls="navbar">
         </button>
         <div class="col-10 mx-auto" style="max-width: 600px;">
           <MiniServer></MiniServer>
@@ -23,8 +34,8 @@ import MiniServer from './components/MiniServer.vue';
 
     <hr>
 
-    <div class="offcanvas offcanvas-start" style="width: 20rem;" tabindex="-1" id="offcanvasExample"
-      aria-labelledby="offcanvasExampleLabel">
+    <div class="offcanvas offcanvas-start" style="width: 20rem;" tabindex="-1" id="navbar"
+         aria-labelledby="navbarLabel">
       <div class="offcanvas-header">
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
@@ -69,14 +80,11 @@ import MiniServer from './components/MiniServer.vue';
       </div>
     </div>
 
-    <RouterView />
+    <RouterView/>
 
   </div>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
+
 </style>

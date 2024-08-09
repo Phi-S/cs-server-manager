@@ -76,7 +76,7 @@ func createRequiredServices(cfg config.Config) (
 		os.Exit(1)
 	}
 
-	statusInstance := status.NewStatus(startParameters.Hostname, startParameters.MaxPlayers, startParameters.StartMap)
+	statusInstance := status.NewStatus(startParameters.StartMap)
 	webSocketServer := NewWebSocketServer()
 
 	gameEventsInstance := game_events.Instance{}
