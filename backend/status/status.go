@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewStatus(hostname string, maxPlayerCount uint8, startMap string) *Status {
+func NewStatus(hostname string, ip string, port string, password string, maxPlayerCount uint8, startMap string) *Status {
 	instance := Status{
 		internalStatus: &InternalStatus{
 			Hostname:       hostname,
@@ -17,6 +17,9 @@ func NewStatus(hostname string, maxPlayerCount uint8, startMap string) *Status {
 			PlayerCount:    0,
 			MaxPlayerCount: maxPlayerCount,
 			Map:            startMap,
+			Ip:             ip,
+			Port:           port,
+			Password:       password,
 		},
 	}
 
@@ -46,6 +49,9 @@ type InternalStatus struct {
 	PlayerCount    uint8          `json:"player_count"`
 	MaxPlayerCount uint8          `json:"max_player_count"`
 	Map            string         `json:"map"`
+	Ip             string         `json:"ip"`
+	Port           string         `json:"port"`
+	Password       string         `json:"password"`
 }
 
 type Status struct {

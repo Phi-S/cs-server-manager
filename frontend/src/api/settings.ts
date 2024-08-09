@@ -1,11 +1,11 @@
 import {Get, handleErrorResponse, PostJson} from "@/api/api";
 
 export class Settings {
-    hostname: string
-    password: string
-    start_map: string
-    max_players: number
-    steam_login_token: string
+    hostname: string | undefined
+    password: string | undefined
+    start_map: string | undefined
+    max_players: number | undefined
+    steam_login_token: string | undefined
 }
 
 

@@ -73,32 +73,26 @@ func (s *Instance) Start(sp StartParameters) error {
 		return err
 	}
 
+	//TODO: use sp.Additional
+
+	args := []string{"-dedicated", "-console"}
+	args = append(args, fmt.Sprintf("-port %s", s.port))
+	args = append(args, fmt.Sprintf("+hostname '%s'", sp.Hostname))
+	args = append(args, fmt.Sprintf("-maxplayers %d", sp.MaxPlayers))
+	args = append(args, fmt.Sprintf("+map %s", sp.StartMap))
+
 	password := strings.TrimSpace(sp.Password)
-	if len([]rune(password)) == 0 {
-		password = ""
-	} else {
-		password = " +sv_password " + password
+	if len([]rune(strings.TrimSpace(sp.Password))) > 0 {
+		args = append(args, fmt.Sprintf("+sv_password %s", password))
 	}
 
 	loginToken := strings.TrimSpace(sp.SteamLoginToken)
-	if len([]rune(loginToken)) == 0 {
-		loginToken = ""
-	} else {
-		loginToken = " +sv_setsteamaccount " + password
+	if len([]rune(strings.TrimSpace(sp.SteamLoginToken))) > 0 {
+		args = append(args, fmt.Sprintf("++sv_setsteamaccount %s", loginToken))
 	}
-	//TODO: use sp.Additional
 
 	cs2ShPath := filepath.Join(s.serverDir, "game", "bin", "linuxsteamrt64", "cs2")
-	cmd := exec.Command(cs2ShPath,
-		"-dedicated",
-		"-console",
-		fmt.Sprintf("-port %s", s.port),
-		fmt.Sprintf("+hostname '%s'", sp.Hostname),
-		fmt.Sprintf("-maxplayers %d", sp.MaxPlayers),
-		fmt.Sprintf("+map %s", sp.StartMap),
-		password,
-		loginToken,
-	)
+	cmd := exec.Command(cs2ShPath, args...)
 
 	slog.Debug("start command: " + strings.Join(cmd.Args, " "))
 

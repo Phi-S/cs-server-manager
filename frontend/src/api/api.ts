@@ -1,6 +1,5 @@
 import {Show} from "@/errorDisplay";
 
-
 let API_URL: string
 let WEBSOCKET_URL: string
 
@@ -36,9 +35,9 @@ export function Setup(backendAddress: string | undefined, useTls: boolean | unde
 }
 
 export class ErrorResponse {
-    status: string
-    message: string
-    request_id: string
+    status: string | undefined
+    message: string | undefined
+    request_id: string | undefined
 }
 
 export async function SendWithoutResponse(path: string, requestInit?: RequestInit): Promise<undefined | ErrorResponse> {
