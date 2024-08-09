@@ -2,24 +2,40 @@ package gvalidator
 
 import (
 	"fmt"
-	"log/slog"
-	"os"
 	"reflect"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
 )
 
-var Instance = validator.New(validator.WithRequiredStructEnabled())
+var instance = validator.New(validator.WithRequiredStructEnabled())
+var customTagsRegistered = false
 
-var isInitialized = false
-
-func Init() {
-	if isInitialized {
-		return
+func Instance() *validator.Validate {
+	err := RegisterCustomTags()
+	if err != nil {
+		panic(fmt.Errorf("failed to register custom tags: %w", err))
 	}
 
-	err := Instance.RegisterValidation("port", func(fl validator.FieldLevel) bool {
+	return instance
+}
+
+func RegisterCustomTags() error {
+	if customTagsRegistered {
+		return nil
+	}
+
+	err := registerPortTag()
+	if err != nil {
+		return fmt.Errorf("failed to register port tag: %w", err)
+	}
+
+	customTagsRegistered = true
+	return nil
+}
+
+func registerPortTag() error {
+	return instance.RegisterValidation("port", func(fl validator.FieldLevel) bool {
 		field := fl.Field()
 
 		var v uint64
@@ -41,11 +57,4 @@ func Init() {
 
 		return v >= 1 && v <= 65535
 	})
-
-	if err != nil {
-		slog.Error("failed to register port tag at gvalidator", "error", err)
-		os.Exit(1)
-	}
-
-	isInitialized = true
 }

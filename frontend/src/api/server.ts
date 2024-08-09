@@ -1,15 +1,7 @@
-import {
-    ErrorResponse,
-    Get,
-    handleErrorResponse,
-    handleErrorResponseWithMessage,
-    Post,
-    PostWithoutResponse,
-    ShowErrorResponse
-} from "@/api/api";
+import {Get, handleErrorResponse, handleErrorResponseWithMessage, Post, PostWithoutResponse} from "@/api/api";
 
 export class SendCommandResponse {
-    output: string[]
+    output: string[] | undefined
 }
 
 export enum ServerStatus {
@@ -25,18 +17,21 @@ export enum SteamcmdStatus {
 }
 
 export class Status {
-    hostname: string
-    server: ServerStatus
-    steamcmd: SteamcmdStatus
-    player_count: number
-    max_player_count: number
-    map: string
+    hostname: string | undefined
+    server: ServerStatus | undefined
+    steamcmd: SteamcmdStatus | undefined
+    player_count: number | undefined
+    max_player_count: number | undefined
+    map: string | undefined
+    ip: string | undefined
+    port: string | undefined
+    password: string | undefined
 }
 
 export class LogEntry {
-    timestamp: string
-    log_type: string
-    message: string
+    timestamp: string | undefined
+    log_type: string | undefined
+    message: string | undefined
 }
 
 export async function startServer() {
@@ -79,8 +74,6 @@ export async function getStatus(): Promise<Status> {
 
 export async function getLogs(count: number): Promise<LogEntry[]> {
     const resp = await Get<LogEntry[]>(`/log/${count}`)
-    if (resp instanceof ErrorResponse) {
-        ShowErrorResponse("Failed to stop server", resp)
-        throw new Error(`Failed to stop server. Response: ${resp}`)
-    }
+    handleErrorResponse("Failed to get server logs", resp)
+    return resp as LogEntry[]
 }

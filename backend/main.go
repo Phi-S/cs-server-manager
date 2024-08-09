@@ -3,7 +3,6 @@ package main
 import (
 	"cs-server-manager/config"
 	"cs-server-manager/constants"
-	"cs-server-manager/event"
 	"cs-server-manager/gvalidator"
 	"cs-server-manager/handlers"
 	"cs-server-manager/jfile"
@@ -30,43 +29,47 @@ import (
 
 func main() {
 	configureLogger()
-	gvalidator.Init()
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		slog.Error(err.Error())
+	if err := gvalidator.RegisterCustomTags(); err != nil {
+		slog.Error("FATAL: gvalidator: failed to register custom tags", "error", err)
 		os.Exit(1)
 	}
 
-	// this will kill the application if unsuccessful
-	createdRequiredDirs(cfg)
+	cfg, err := config.GetConfig()
+	if err != nil {
+		slog.Error("FATAL: failed to get config", "error", err)
+		os.Exit(1)
+	}
 
-	// this lock is used to prevent collision between the server and steamcmd instance
-	// Fox example the lock is used to prevent the server from being started while an steamcmd updated is getting started at the same time.
-	// This can occur if two http request are coming in at the same time and the internal status of the steamcmd and/or server instances is not yet updated
-	ServerSteamcmdLock := sync.Mutex{}
+	if err := createdRequiredDirs(cfg); err != nil {
+		slog.Error("FATAL: failed to create required directories", "error", err)
+		os.Exit(1)
+	}
 
 	steamcmdInstance,
 		serverInstance,
 		startParametersJsonFileHandler,
 		userLogWriter,
 		statusInstance,
-		webSocketServer,
-		gameEventsInstance := createRequiredServices(cfg)
+		webSocketServerInstance,
+		gameEventsInstance,
+		err := createRequiredServices(cfg)
+	if err != nil {
+		slog.Error("FATAL: failed to create required services", "error", err)
+		os.Exit(1)
+	}
 
-	// register game event detection
-	serverInstance.OnOutput(func(p event.PayloadWithData[string]) {
-		gameEventsInstance.DetectGameEvent(p.Data)
-	})
-
-	updateStatusOnEvents(statusInstance, serverInstance, steamcmdInstance, gameEventsInstance)
-	statusInstance.OnStatusChanged(func(p event.PayloadWithData[status.InternalStatus]) {
-		if err := webSocketServer.Broadcast("status", p.Data); err != nil {
-			slog.Error("failed to send status message", "status", p.Data, "error", err)
-		}
-	})
-
-	logEvents(userLogWriter, webSocketServer, serverInstance, steamcmdInstance, gameEventsInstance)
+	// linking up all services via events
+	registerEvents(
+		cfg,
+		serverInstance,
+		steamcmdInstance,
+		startParametersJsonFileHandler,
+		userLogWriter,
+		statusInstance,
+		webSocketServerInstance,
+		gameEventsInstance,
+	)
 
 	defer func() {
 		_ = steamcmdInstance.Cancel()
@@ -78,8 +81,12 @@ func main() {
 		userLogWriter.Close()
 	}()
 
-	////////////////////
-	StartApi(
+	// this lock is used to prevent collision between the server and steamcmd instance
+	// Fox example the lock is used to prevent the server from being started while a steamcmd updated is getting started at the same time.
+	// This can occur if two http request are coming in at the same time and the internal status of the steamcmd and/or server instances is not yet updated
+	ServerSteamcmdLock := sync.Mutex{}
+
+	startApi(
 		cfg,
 		&ServerSteamcmdLock,
 		serverInstance,
@@ -87,7 +94,7 @@ func main() {
 		startParametersJsonFileHandler,
 		statusInstance,
 		userLogWriter,
-		webSocketServer,
+		webSocketServerInstance,
 	)
 }
 
@@ -106,7 +113,7 @@ func configureLogger() {
 	slog.SetDefault(logger)
 }
 
-func StartApi(
+func startApi(
 	config config.Config,
 	ServerSteamcmdLock *sync.Mutex,
 	serverInstance *server.Instance,
@@ -168,6 +175,7 @@ func StartApi(
 		if err == nil {
 			slog.Info("request finished",
 				"request-id", requestid.FromContext(c),
+				"method", c.Method(),
 				"path", c.Path(),
 				"query", c.Request().URI().QueryString(),
 				"ip", c.IP(),
@@ -178,6 +186,7 @@ func StartApi(
 		} else {
 			slog.Error("request finished with error",
 				"request-id", requestid.FromContext(c),
+				"method", c.Method(),
 				"path", c.Path(),
 				"query", c.Request().URI().QueryString(),
 				"ip", c.IP(),

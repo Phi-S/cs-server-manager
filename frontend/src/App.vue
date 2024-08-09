@@ -14,15 +14,16 @@ function navigateToHome() {
 
     <ErrorDisplay></ErrorDisplay>
 
-    <header class="mt-2 container-lg mb-4">
-      <div class="row w-100" style="height: 40px;">
-        <img @click="navigateToHome" class="mt-1 me-4 border-end" src="@/assets/logo.png" alt="logo" href="/"
-             style="height: 40px; width: 60px; cursor: pointer"/>
-
-        <button tabindex="1" class="col-1 btn btn-outline-info bi bi-list fs-3" style="width: 45px;"
+    <header class="mt-2 container-lg mb-4 pe-5">
+      <div class="row w-100 flex-nowrap" style="height: 50px;">
+        <button tabindex="1" class="col-1 btn btn-outline-info bi bi-list-stars border-0 fs-1 me-2" style="width: 45px;"
                 data-bs-toggle="offcanvas"
                 data-bs-target="#navbar" aria-controls="navbar">
         </button>
+
+        <img @click="navigateToHome" class="mt-1 me-2 border-start" src="@/assets/logo.png" alt="logo" href="/"
+             style="height: 40px; width: 60px; cursor: pointer"/>
+
         <div class="col-10 mx-auto" style="max-width: 600px;">
           <MiniServer></MiniServer>
         </div>

@@ -2,6 +2,8 @@ package jfile
 
 import (
 	"bytes"
+	"cs-server-manager/event"
+	"cs-server-manager/gvalidator"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,9 +15,7 @@ import (
 )
 
 func New[T any](pathIn string, defaultValueIfNoExist T) (*Instance[T], error) {
-	v := validator.New(validator.WithRequiredStructEnabled())
-
-	if err := v.Var(pathIn, "required,filepath"); err != nil {
+	if err := gvalidator.Instance().Var(pathIn, "required,filepath"); err != nil {
 		return nil, err
 	}
 
@@ -23,9 +23,8 @@ func New[T any](pathIn string, defaultValueIfNoExist T) (*Instance[T], error) {
 	requiredType := reflect.TypeOf(tType)
 
 	jsonFileInstance := &Instance[T]{
-		path:     pathIn,
-		tType:    requiredType,
-		validate: v,
+		path:  pathIn,
+		tType: requiredType,
 	}
 
 	_, err := os.Stat(pathIn)
@@ -49,9 +48,10 @@ func New[T any](pathIn string, defaultValueIfNoExist T) (*Instance[T], error) {
 type Instance[T any] struct {
 	path string
 
-	tType    reflect.Type
-	lock     sync.Mutex
-	validate *validator.Validate
+	tType reflect.Type
+	lock  sync.Mutex
+
+	onUpdated event.InstanceWithData[T]
 }
 
 func (j *Instance[T]) Write(data T) error {
@@ -120,5 +120,10 @@ func (j *Instance[T]) Update(updateFunc func(currentData *T)) error {
 		return fmt.Errorf("failed to write json file %w", err)
 	}
 
+	j.onUpdated.Trigger(*data)
 	return nil
+}
+
+func (j *Instance[T]) OnUpdated(handler func(data event.PayloadWithData[T])) {
+	j.onUpdated.Register(handler)
 }
