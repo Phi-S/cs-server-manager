@@ -6,6 +6,7 @@ import (
 	"cs-server-manager/game_events"
 	"cs-server-manager/jfile"
 	"cs-server-manager/logwrt"
+	"cs-server-manager/plugins"
 	"cs-server-manager/server"
 	"cs-server-manager/status"
 	"cs-server-manager/steamcmd"
@@ -43,33 +44,35 @@ func createRequiredServices(cfg config.Config) (
 	*status.Status,
 	*WebSocketServer,
 	*game_events.Instance,
+	*plugins.Instance,
 	error,
 ) {
+
 	steamcmdInstance, err := steamcmd.NewInstance(cfg.SteamcmdDir, cfg.ServerDir)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create steamcmd instance %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create steamcmd instance %w", err)
 	}
 
 	serverInstance, err := server.NewInstance(cfg.ServerDir, cfg.CsPort, cfg.SteamcmdDir)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create server instance %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create server instance %w", err)
 	}
 
 	startParametersJsonPath := filepath.Join(cfg.DataDir, "start-parameters.json")
 	startParametersJsonFile, err := jfile.New[server.StartParameters](startParametersJsonPath, *server.DefaultStartParameters())
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create new json file service for start-parameter.json %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create new json file service for start-parameter.json %w", err)
 	}
 
 	logDir := filepath.Join(cfg.DataDir, "logs")
 	userLogWriter, err := logwrt.NewLogWriter(logDir, "user")
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create user log writer %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create user log writer %w", err)
 	}
 
 	startParameters, err := startParametersJsonFile.Read()
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to read start-parameters.json %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to read start-parameters.json %w", err)
 	}
 
 	statusInstance := status.NewStatus(
@@ -85,6 +88,14 @@ func createRequiredServices(cfg config.Config) (
 
 	gameEventsInstance := game_events.Instance{}
 
+	pluginsJsonFilePath := filepath.Join(cfg.DataDir, "plugins.json")
+	installedPluginsJsonPath := filepath.Join(cfg.DataDir, "installed-plugins.json")
+	csgoDirPath := filepath.Join(cfg.ServerDir, "game", "csgo")
+	pluginsInstance, err := plugins.New(csgoDirPath, pluginsJsonFilePath, installedPluginsJsonPath)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create plugins instance %w", err)
+	}
+
 	return steamcmdInstance,
 		serverInstance,
 		startParametersJsonFile,
@@ -92,6 +103,7 @@ func createRequiredServices(cfg config.Config) (
 		statusInstance,
 		webSocketServer,
 		&gameEventsInstance,
+		pluginsInstance,
 		nil
 }
 
@@ -104,8 +116,9 @@ func registerEvents(
 	statusInstance *status.Status,
 	webSocketServerInstance *WebSocketServer,
 	gameEventsInstance *game_events.Instance,
+	pluginsInstance *plugins.Instance,
 ) {
-	logEvents(logWriterInstance, webSocketServerInstance, serverInstance, steamcmdInstance, gameEventsInstance)
+	logEvents(logWriterInstance, webSocketServerInstance, serverInstance, steamcmdInstance, gameEventsInstance, pluginsInstance)
 
 	// detect game events via server output
 	serverInstance.OnOutput(func(p event.PayloadWithData[string]) {

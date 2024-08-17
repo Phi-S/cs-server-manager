@@ -2,6 +2,7 @@ package gvalidator
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10/non-standard/validators"
 	"reflect"
 	"strconv"
 
@@ -25,9 +26,12 @@ func RegisterCustomTags() error {
 		return nil
 	}
 
-	err := registerPortTag()
-	if err != nil {
+	if err := registerPortTag(); err != nil {
 		return fmt.Errorf("failed to register port tag: %w", err)
+	}
+
+	if err := instance.RegisterValidation("notblank", validators.NotBlank); err != nil {
+		return fmt.Errorf("failed to register notblank tag %w", err)
 	}
 
 	customTagsRegistered = true

@@ -16,7 +16,6 @@ SetupApi(backendAddress, useTls)
 SetupState()
 
 const app = createApp(App)
-
 app.use(router)
 
 app.mount('#app')

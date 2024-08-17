@@ -1,10 +1,8 @@
 package steamcmd
 
 import (
-	"archive/tar"
-	"compress/gzip"
+	download "cs-server-manager/download/unzip"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -51,68 +49,9 @@ func downloadSteamCmd(steamCmdPath string) error {
 		return err
 	}
 
-	if err := unzip(steamCmdTarGzFilePath, steamCmdPath); err != nil {
+	if err := download.TarGz(steamCmdTarGzFilePath, steamCmdPath); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// TODO: fix handle erros and defer is not optimal
-// https://stackoverflow.com/questions/45617758/proper-way-to-release-resources-with-defer-in-a-loop
-func unzip(gzFilePath, targetDir string) error {
-	gzFile, err := os.Open(gzFilePath)
-	if err != nil {
-		return err
-	}
-	defer gzFile.Close()
-
-	gzReader, err := gzip.NewReader(gzFile)
-	if err != nil {
-		return err
-	}
-	defer gzReader.Close()
-
-	tarReader := tar.NewReader(gzReader)
-
-	for {
-		header, err := tarReader.Next()
-
-		if err == io.EOF {
-			break // End of archive
-		}
-		if err != nil {
-			return err
-		}
-
-		targetFile := filepath.Join(targetDir, header.Name)
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(targetFile, 0755); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-
-			targetDir := filepath.Dir(targetFile)
-			if err := os.MkdirAll(targetDir, 0755); err != nil {
-				return err
-			}
-
-			file, err := os.OpenFile(targetFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			if _, err := io.Copy(file, tarReader); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unsupported type: %c in %s", header.Typeflag, header.Name)
-		}
-	}
-
-	_ = os.Remove(gzFilePath)
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"cs-server-manager/event"
 	"cs-server-manager/game_events"
 	"cs-server-manager/logwrt"
+	"cs-server-manager/plugins"
 	"cs-server-manager/server"
 	"cs-server-manager/steamcmd"
 	"fmt"
@@ -19,6 +20,7 @@ func logEvents(
 	serverInstance *server.Instance,
 	steamcmdInstance *steamcmd.Instance,
 	gameEventsInstance *game_events.Instance,
+	pluginsInstance *plugins.Instance,
 ) {
 	handleEvent := func(logType string, timestampUtc time.Time, message string, args ...any) {
 		logEntry := logwrt.NewLogEntry(timestampUtc, logType, message)
@@ -96,5 +98,10 @@ func logEvents(
 
 	gameEventsInstance.OnPlayerDisconnected(func(p event.PayloadWithData[string]) {
 		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("Player '%v' disconnected", p.Data))
+	})
+
+	// plugins
+	pluginsInstance.OnPluginInstalled(func(p event.PayloadWithData[plugins.OnPluginInstalledEventData]) {
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("Plugin '%v(%v)' installed", p.Data.Name, p.Data.Version))
 	})
 }

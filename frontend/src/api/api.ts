@@ -64,7 +64,12 @@ export async function Send<T>(path: string, requestInit?: RequestInit): Promise<
             return errorResponse
         }
 
-        return await response.json() as T
+        const respJson = await response.json() as T
+        if (respJson === undefined) {
+            throw new Error("response json in undefined")
+        }
+
+        return respJson
     } catch (e) {
         console.error(`request to path "${path}" failed with error ${e}`);
         throw e

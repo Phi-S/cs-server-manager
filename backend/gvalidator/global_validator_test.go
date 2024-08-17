@@ -5,14 +5,10 @@ import (
 	"testing"
 )
 
-func init() {
-	globalvalidator.Init()
-}
-
 func TestGlobalValidator_PortTag_Ok(t *testing.T) {
 	type testInput struct {
-		port             uint32
-		shouldThrowError bool
+		port        uint32
+		shouldError bool
 	}
 	testData := []testInput{
 		{0, true},
@@ -23,13 +19,13 @@ func TestGlobalValidator_PortTag_Ok(t *testing.T) {
 	}
 
 	for _, td := range testData {
-		err := globalvalidator.Instance.Var(td.port, "port")
+		err := globalvalidator.Instance().Var(td.port, "port")
 		if err == nil {
-			if td.shouldThrowError {
+			if td.shouldError {
 				t.Fatalf("error expected but nill returned. port: %v", td.port)
 			}
 		} else {
-			if !td.shouldThrowError {
+			if !td.shouldError {
 				t.Fatalf("Test failed for data: %v Error: %v", td.port, err)
 			}
 		}

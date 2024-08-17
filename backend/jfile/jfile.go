@@ -10,8 +10,6 @@ import (
 	"os"
 	"reflect"
 	"sync"
-
-	"github.com/go-playground/validator/v10"
 )
 
 func New[T any](pathIn string, defaultValueIfNoExist T) (*Instance[T], error) {
@@ -31,15 +29,15 @@ func New[T any](pathIn string, defaultValueIfNoExist T) (*Instance[T], error) {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			if err := jsonFileInstance.Write(defaultValueIfNoExist); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("jfile.Write defaultValueIfNoExist: %w", err)
 			}
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("os.Stat: %w", err)
 		}
 	}
 
 	if _, err := jsonFileInstance.Read(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("jsonFileInstance.Read first read try: %w", err)
 	}
 
 	return jsonFileInstance, nil
@@ -79,7 +77,11 @@ func (j *Instance[T]) Read() (*T, error) {
 func (j *Instance[T]) readInternal() (*T, error) {
 	content, err := os.ReadFile(j.path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read file %v %w", j.path, err)
+	}
+
+	if string(content) == "[]" {
+		return new(T), nil
 	}
 
 	data := new(T)
@@ -89,12 +91,11 @@ func (j *Instance[T]) readInternal() (*T, error) {
 	decoder.DisallowUnknownFields()
 	err = decoder.Decode(&data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse file %v %w", j.path, err)
 	}
 
-	val := validator.New(validator.WithRequiredStructEnabled())
-	if err := val.Struct(data); err != nil {
-		return nil, err
+	if err := gvalidator.Instance().Var(data, "dive"); err != nil {
+		return nil, fmt.Errorf("failed to validate file content %v %w", j.path, err)
 	}
 
 	return data, nil

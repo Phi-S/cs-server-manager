@@ -10,9 +10,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-type InternalError struct {
-}
-
 func NewErrorWithInternal(c fiber.Ctx, code int, message string, internalError error) error {
 	c.Locals(constants.InternalErrorKey, internalError)
 	return fiber.NewError(code, message)

@@ -7,15 +7,14 @@ import (
 	"cs-server-manager/handlers"
 	"cs-server-manager/jfile"
 	"cs-server-manager/logwrt"
+	"cs-server-manager/plugins"
 	"cs-server-manager/server"
 	"cs-server-manager/status"
 	"cs-server-manager/steamcmd"
 	"errors"
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -53,6 +52,7 @@ func main() {
 		statusInstance,
 		webSocketServerInstance,
 		gameEventsInstance,
+		pluginsInstance,
 		err := createRequiredServices(cfg)
 	if err != nil {
 		slog.Error("FATAL: failed to create required services", "error", err)
@@ -69,6 +69,7 @@ func main() {
 		statusInstance,
 		webSocketServerInstance,
 		gameEventsInstance,
+		pluginsInstance,
 	)
 
 	defer func() {
@@ -95,6 +96,7 @@ func main() {
 		statusInstance,
 		userLogWriter,
 		webSocketServerInstance,
+		pluginsInstance,
 	)
 }
 
@@ -122,6 +124,7 @@ func startApi(
 	status *status.Status,
 	userLogWriter *logwrt.LogWriter,
 	webSocketServer *WebSocketServer,
+	pluginsInstance *plugins.Instance,
 ) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
@@ -156,63 +159,8 @@ func startApi(
 
 	app.Use(cors.New())
 	app.Use(requestid.New())
-	app.Use(func(c fiber.Ctx) error {
-		startTime := time.Now().UTC()
-		err := c.Next()
-
-		duration := time.Now().UTC().Sub(startTime)
-		internalError, _ := c.Locals(constants.InternalErrorKey).(error)
-
-		statusCode := fiber.StatusInternalServerError
-		responseMessage := ""
-
-		var e *fiber.Error
-		if errors.As(err, &e) {
-			statusCode = e.Code
-			responseMessage = e.Message
-		}
-
-		if err == nil {
-			slog.Info("request finished",
-				"request-id", requestid.FromContext(c),
-				"method", c.Method(),
-				"path", c.Path(),
-				"query", c.Request().URI().QueryString(),
-				"ip", c.IP(),
-				"port", c.Port(),
-				"status", c.Response().StatusCode(),
-				"duration", duration,
-			)
-		} else {
-			slog.Error("request finished with error",
-				"request-id", requestid.FromContext(c),
-				"method", c.Method(),
-				"path", c.Path(),
-				"query", c.Request().URI().QueryString(),
-				"ip", c.IP(),
-				"port", c.Port(),
-				"status", statusCode,
-				"duration", duration,
-				"response-message", responseMessage,
-				"internal-error", internalError,
-				"error", err,
-			)
-		}
-		return err
-	})
-
-	app.Use(func(c fiber.Ctx) (err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				var ok bool
-				if err, ok = r.(error); !ok {
-					err = fmt.Errorf("handler paniced: %v | %s", r, debug.Stack())
-				}
-			}
-		}()
-
-		return c.Next()
-	})
+	app.Use(logMiddleware)
+	app.Use(panicHandler)
 
 	v1 := app.Group("/api/v1", func(c fiber.Ctx) error {
 		c.Locals(constants.ConfigKey, config)
@@ -221,6 +169,7 @@ func startApi(
 		c.Locals(constants.SteamCmdInstanceKey, steamcmdInstance)
 		c.Locals(constants.StartParametersJsonFileKey, startParametersJsonFile)
 		c.Locals(constants.StatusKey, status)
+		c.Locals(constants.PluginsKey, pluginsInstance)
 		return c.Next()
 	})
 
@@ -235,6 +184,9 @@ func startApi(
 
 	v1.Get("/settings", handlers.GetSettingsHandler)
 	v1.Post("/settings", handlers.UpdateSettingsHandler)
+
+	v1.Get("/plugins", handlers.GetAvailablePluginsHandler)
+	v1.Post("/plugins/install", handlers.InstallPluginHandler)
 
 	logGroup := v1.Group("/log", func(c fiber.Ctx) error {
 		c.Locals(constants.UserLogWriterKey, userLogWriter)

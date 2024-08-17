@@ -31,3 +31,7 @@ const StartParametersJsonFileKey startParametersJsonFileKeyType = 0
 type statusKeyType uint
 
 const StatusKey statusKeyType = 0
+
+type pluginsKeyType uint
+
+const PluginsKey pluginsKeyType = 0
