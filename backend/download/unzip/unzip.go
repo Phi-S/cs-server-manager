@@ -12,31 +12,31 @@ import (
 	"strings"
 )
 
-func TarGz(gzFilePath, targetDir string) error {
+func TarGz(gzFilePath, targetDir string) ([]string, error) {
 	gzFile, err := os.Open(gzFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to open zipped file: %w", err)
+		return nil, fmt.Errorf("failed to open zipped file: %w", err)
 	}
 
 	defer func() {
 		if err := gzFile.Close(); err != nil {
-			slog.Warn("UnzipTarGz successful but failed to close source file", "error", err)
+			slog.Warn("UnzipTarGz successful but failed to close source file", "path", gzFilePath, "error", err)
 		}
 	}()
 
-	gzReader, err := gzip.NewReader(gzFile)
+	gzipReader, err := gzip.NewReader(gzFile)
 	if err != nil {
-		return fmt.Errorf("failed to create gzip reader: %w", err)
+		return nil, fmt.Errorf("failed to create gzip gzipReader: %w", err)
 	}
 
 	defer func() {
-
-		if err := gzReader.Close(); err != nil {
-			slog.Warn("UnzipTarGz successful but failed to close reader", "error", err)
+		if err := gzipReader.Close(); err != nil {
+			slog.Warn("UnzipTarGz successful but failed to close gzipReader", "error", err)
 		}
 	}()
 
-	tarReader := tar.NewReader(gzReader)
+	tarReader := tar.NewReader(gzipReader)
+
 	filesToClose := make([]*os.File, 0)
 	defer func() {
 		for _, f := range filesToClose {
@@ -47,51 +47,54 @@ func TarGz(gzFilePath, targetDir string) error {
 		}
 	}()
 
+	extractedFiles := make([]string, 0)
 	for {
 		header, err := tarReader.Next()
 
 		if err == io.EOF {
 			break
 		}
+
 		if err != nil {
-			return fmt.Errorf("failed to download next file %w", err)
+			return nil, fmt.Errorf("failed to extract targetFile %w", err)
 		}
 
-		targetFile := filepath.Join(targetDir, header.Name)
+		targetFilePath := filepath.Join(targetDir, header.Name)
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(targetFile, 0755); err != nil {
-				return fmt.Errorf("failed to create new directory for file %v %w", header.Name, err)
+			if err := os.MkdirAll(targetFilePath, 0755); err != nil {
+				return nil, fmt.Errorf("failed to create new directory for targetFile %v %w", header.Name, err)
 			}
 		case tar.TypeReg:
-			targetDir := filepath.Dir(targetFile)
+			targetDir := filepath.Dir(targetFilePath)
 			if err := os.MkdirAll(targetDir, 0755); err != nil {
-				return fmt.Errorf("failed to create new directory for file %v %w", header.Name, err)
+				return nil, fmt.Errorf("failed to create new directory for targetFile %v %w", header.Name, err)
 			}
 
-			file, err := os.OpenFile(targetFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+			targetFile, err := os.OpenFile(targetFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
 			if err != nil {
-				return fmt.Errorf("failed to create result file for %v %w", header.Name, err)
+				return nil, fmt.Errorf("failed to create result targetFile for %v %w", header.Name, err)
 			}
-			filesToClose = append(filesToClose, file)
+			filesToClose = append(filesToClose, targetFile)
 
-			if _, err := io.Copy(file, tarReader); err != nil {
-				return err
+			if _, err := io.Copy(targetFile, tarReader); err != nil {
+				return nil, fmt.Errorf("failed to copy zipped file '%v' to destination '%v' %w", header.Name, targetFilePath, err)
 			}
+			extractedFiles = append(extractedFiles, targetFilePath)
 		default:
-			return fmt.Errorf("unsupported type: %c in %s", header.Typeflag, header.Name)
+			return nil, fmt.Errorf("unsupported type: %c in %s", header.Typeflag, header.Name)
 		}
 	}
 
 	_ = os.Remove(gzFilePath)
-	return nil
+	return extractedFiles, nil
 }
 
-func Zip(zipFilePath, targetDir string) error {
+func Zip(zipFilePath, targetDir string) ([]string, error) {
 	reader, err := zip.OpenReader(zipFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to open zip file %w", err)
+		return nil, fmt.Errorf("failed to open zip file %w", err)
 	}
 	defer func() {
 		if err := reader.Close(); err != nil {
@@ -115,39 +118,47 @@ func Zip(zipFilePath, targetDir string) error {
 		}
 	}()
 
+	extractedFiles := make([]string, 0)
+
 	for _, f := range reader.File {
 		filePath := filepath.Join(targetDir, f.Name)
 		if !strings.HasPrefix(filePath, filepath.Clean(targetDir)+string(os.PathSeparator)) {
-			return fmt.Errorf("invalid file path: %s", filePath)
+			return nil, fmt.Errorf("invalid file path: %s", filePath)
 		}
 
 		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
-				return err
+				return nil, fmt.Errorf("failed to create directory '%v' %w", filePath, err)
 			}
 			continue
 		}
 
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			return err
+			return nil, fmt.Errorf("failed to create directory for file '%v' %w", filePath, err)
 		}
 
 		destinationFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("failed to open destination file '%v' %w", filePath, err)
 		}
 		filesToClose = append(filesToClose, destinationFile)
 
 		zippedFile, err := f.Open()
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("failed to open zipped file %w", err)
 		}
 		zipFilesToClose = append(zipFilesToClose, zippedFile)
 
 		if _, err := io.Copy(destinationFile, zippedFile); err != nil {
-			return err
+			return nil, fmt.Errorf("failed to copy unzipped file '%v' to destination '%v' %w",
+				f.Name, destinationFile, err)
 		}
+		extractedFiles = append(extractedFiles, filePath)
 	}
 
-	return nil
+	if len(extractedFiles) == 0 {
+		return nil, fmt.Errorf("no files extracted")
+	}
+
+	return extractedFiles, nil
 }

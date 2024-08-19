@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,6 +41,7 @@ type InstalledPlugin struct {
 	Name           string    `json:"name" validate:"required,lt=32"`
 	Version        string    `json:"version" validate:"required,lt=32"`
 	InstalledAtUtc time.Time `json:"installed_at_utc" validate:"required,lt=32"`
+	Files          []string  `json:"files" validate:"required"`
 }
 
 type OnPluginInstalledEventData struct {
@@ -48,8 +50,8 @@ type OnPluginInstalledEventData struct {
 }
 
 type Instance struct {
-	lock       sync.Mutex
-	csGamePath string
+	lock    sync.Mutex
+	csgoDir string
 
 	installedPluginJfile *jfile.Instance[[]InstalledPlugin]
 	plugins              []Plugin
@@ -62,9 +64,9 @@ var (
 	defaultPluginsJsonData []byte
 )
 
-func New(csGamePath string, pluginsJsonFilePath string, installedPluginsJsonPath string) (*Instance, error) {
-	if err := gvalidator.Instance().Var(csGamePath, "required,dir"); err != nil {
-		return nil, fmt.Errorf("csGamePath %v is not valid %w", csGamePath, err)
+func New(csgoDir string, pluginsJsonFilePath string, installedPluginsJsonPath string) (*Instance, error) {
+	if err := gvalidator.Instance().Var(csgoDir, "required,dir"); err != nil {
+		return nil, fmt.Errorf("csgoDir %v is not valid %w", csgoDir, err)
 	}
 
 	if err := gvalidator.Instance().Var(pluginsJsonFilePath, "required,filepath"); err != nil {
@@ -110,7 +112,7 @@ func New(csGamePath string, pluginsJsonFilePath string, installedPluginsJsonPath
 	}
 
 	instance := &Instance{
-		csGamePath:           csGamePath,
+		csgoDir:              csgoDir,
 		installedPluginJfile: installedPluginsJfile,
 		plugins:              plugins,
 	}
@@ -172,6 +174,7 @@ func (i *Instance) installPluginByNameInternal(pluginName string, versionName st
 			Name:           plugin.Name,
 			Version:        version.Name,
 			InstalledAtUtc: time.Now().UTC(),
+			Files:          make([]string, 0),
 		}
 		if currentData == nil {
 			*currentData = []InstalledPlugin{installedPlugin}
@@ -183,8 +186,9 @@ func (i *Instance) installPluginByNameInternal(pluginName string, versionName st
 		return fmt.Errorf("installedPluginJfile.Update: %w", err)
 	}
 
-	if downloadAndUnzipErr := i.downloadAndUnzip(plugin, version.DownloadURL); downloadAndUnzipErr != nil {
-		err := i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
+	unzippedFiles, err := i.downloadAndUnzip(plugin, version.DownloadURL)
+	if err != nil {
+		revertInstalledPluginsJsonErr := i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
 			for i, installedPlugin := range *currentData {
 				if installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name {
 					*currentData = append((*currentData)[:i], (*currentData)[i+1:]...)
@@ -192,13 +196,100 @@ func (i *Instance) installPluginByNameInternal(pluginName string, versionName st
 				}
 			}
 		})
-		if err != nil {
+		if revertInstalledPluginsJsonErr != nil {
 			return fmt.Errorf("revert installedPluginJfile update: %w", err)
 		}
-		return fmt.Errorf("downloadAndUnzip: %w", downloadAndUnzipErr)
+		return fmt.Errorf("downloadAndUnzip: %w", err)
+	}
+
+	err = i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
+		for i, installedPlugin := range *currentData {
+			if installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name {
+				(*currentData)[i].Files = unzippedFiles
+				return
+			}
+		}
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update files in installed-plugins.json %w", err)
+	}
+
+	// additional plugin actions
+	if pluginName == "metamod_source" {
+		gaminfoPaht := filepath.Join(i.csgoDir, "gameinfo.gi")
+		if err := metamod_install(gaminfoPaht); err != nil {
+			revertInstalledPluginsJsonErr := i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
+				for i, installedPlugin := range *currentData {
+					if installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name {
+						*currentData = append((*currentData)[:i], (*currentData)[i+1:]...)
+						return
+					}
+				}
+			})
+			if revertInstalledPluginsJsonErr != nil {
+				return fmt.Errorf("revert installedPluginJfile update: %w", err)
+			}
+
+			return fmt.Errorf("failed to perfomace additional action after plugin installation '%v' %w", pluginName, err)
+		}
 	}
 
 	return nil
+}
+
+func (i *Instance) Uninstall(pluginName string) error {
+	if err := gvalidator.Instance().Var(pluginName, "required,lt=64"); err != nil {
+		return fmt.Errorf("pluginName %v is not valid %w", pluginName, err)
+	}
+
+	_, err := i.getPluginByName(pluginName)
+	if err != nil {
+		return fmt.Errorf("getPluginByName: %w", err)
+	}
+
+	var uninstallErr error
+	err = i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
+		for i, installedPlugin := range *currentData {
+			if installedPlugin.Name == pluginName {
+				for _, file := range installedPlugin.Files {
+					if err := os.RemoveAll(file); err != nil {
+						uninstallErr = fmt.Errorf("failed to remove installed file '%v' %w", file, err)
+						return
+					}
+				}
+
+				*currentData = append((*currentData)[:i], (*currentData)[i+1:]...)
+				return
+			}
+		}
+	})
+	if uninstallErr != nil {
+		return fmt.Errorf("uninstallErr: %w", uninstallErr)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to update installed-plugins.json after uninstall %w", err)
+	}
+
+	// additional plugin actions
+	if pluginName == "metamod_source" {
+		gaminfoPaht := filepath.Join(i.csgoDir, "gameinfo.gi")
+		if err := metamod_uninstall(gaminfoPaht); err != nil {
+			slog.Error(fmt.Errorf("metamod uninstalled successfully but failed to perfomace additional action after plugin removal '%v' %w", pluginName, err).Error())
+		}
+	}
+
+	return nil
+}
+
+func (i *Instance) getPluginByName(pluginName string) (Plugin, error) {
+	for _, plugin := range i.plugins {
+		if plugin.Name == pluginName {
+			return plugin, nil
+		}
+	}
+
+	return Plugin{}, fmt.Errorf("plugin '%v' not found", pluginName)
 }
 
 func (i *Instance) getPluginAndVersionByName(pluginName string, versionName string) (Plugin, Version, error) {
@@ -223,43 +314,46 @@ func (i *Instance) getPluginAndVersionByName(pluginName string, versionName stri
 	return Plugin{}, Version{}, errors.New("No plugin with name " + pluginName + " found")
 }
 
-func (i *Instance) downloadAndUnzip(plugin Plugin, downloadUrl string) error {
-	tempDirPath := filepath.Join(i.csGamePath, fmt.Sprintf("temp_%v_%v", plugin.Name, time.Now().UTC()))
+func (i *Instance) downloadAndUnzip(plugin Plugin, downloadUrl string) ([]string, error) {
+	tempDirPath := filepath.Join(i.csgoDir, fmt.Sprintf("temp_%v_%v", plugin.Name, time.Now().UTC()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
-		return fmt.Errorf("os.Mkdir temp dir: %w", err)
+		return nil, fmt.Errorf("os.Mkdir temp dir: %w", err)
 	}
 
 	downloadedFilePath, err := download.Download(downloadUrl, tempDirPath)
 	if err != nil {
-		return fmt.Errorf("download.Download: %w", err)
+		return nil, fmt.Errorf("download.Download: %w", err)
 	}
 
-	destPath := filepath.Join(i.csGamePath, plugin.InstallDir)
+	destPath := filepath.Join(i.csgoDir, plugin.InstallDir)
 
-	if err := unzipDownload(downloadedFilePath, destPath); err != nil {
-		return fmt.Errorf("unzipDownload: %w", err)
+	unzippedFiles, err := unzipDownload(downloadedFilePath, destPath)
+	if err != nil {
+		return nil, fmt.Errorf("unzipDownload: %w", err)
 	}
 
 	if err := os.RemoveAll(tempDirPath); err != nil {
-		return fmt.Errorf("os.RemoveAll temp dir: %w", err)
+		return nil, fmt.Errorf("os.RemoveAll temp dir: %w", err)
 	}
 
-	return nil
+	return unzippedFiles, nil
 }
 
-func unzipDownload(sourcePath, destDir string) error {
+func unzipDownload(sourcePath, destDir string) ([]string, error) {
+	var unzippedFiles []string
+	var err error
 	if strings.HasSuffix(sourcePath, ".zip") {
-		if err := unzip.Zip(sourcePath, destDir); err != nil {
-			return fmt.Errorf("unzip zip: %w", err)
-
+		unzippedFiles, err = unzip.Zip(sourcePath, destDir)
+		if err != nil {
+			return nil, fmt.Errorf("unzip zip: %w", err)
 		}
 	} else if strings.HasSuffix(sourcePath, ".tar.gz") {
-		if err := unzip.TarGz(sourcePath, destDir); err != nil {
-			return fmt.Errorf("unzip tar.gz: %w", err)
+		if unzippedFiles, err = unzip.TarGz(sourcePath, destDir); err != nil {
+			return nil, fmt.Errorf("unzip tar.gz: %w", err)
 		}
 	} else {
-		return fmt.Errorf("downloaded filetype not supported '%v'", sourcePath)
+		return nil, fmt.Errorf("downloaded filetype not supported '%v'", sourcePath)
 	}
 
-	return nil
+	return unzippedFiles, err
 }

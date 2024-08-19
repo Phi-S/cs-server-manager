@@ -49,7 +49,7 @@ func downloadSteamCmd(steamCmdPath string) error {
 		return err
 	}
 
-	if err := download.TarGz(steamCmdTarGzFilePath, steamCmdPath); err != nil {
+	if _, err := download.TarGz(steamCmdTarGzFilePath, steamCmdPath); err != nil {
 		return err
 	}
 
