@@ -8,13 +8,11 @@ export class Settings {
     steam_login_token: string | undefined
 }
 
-
 export async function getSettings(): Promise<Settings> {
     const resp = await Get<Settings>("/settings")
     handleErrorResponse("Failed to get settings", resp)
     return resp as Settings;
 }
-
 
 export async function updateSettings(settings: Settings): Promise<Settings> {
     const resp = await PostJson<Settings>("/settings", settings)

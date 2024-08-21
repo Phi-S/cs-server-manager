@@ -4,28 +4,25 @@ export class SendCommandResponse {
     output: string[] | undefined
 }
 
-export enum ServerStatus {
-    ServerStatusStarted = "server-status-started",
-    ServerStatusStarting = "server-status-starting",
-    ServerStatusStopped = "server-status-stopped",
-    ServerStatusStopping = "server-status-stopping"
-}
-
-export enum SteamcmdStatus {
-    SteamcmdStatusStopped = "steamcmd-status-stopped",
-    SteamcmdStatusUpdating = "steamcmd-status-updating"
+export enum State {
+    Idle = "idle",
+    ServerStarting = "server-starting",
+    ServerStarted = "server-started",
+    ServerStopping = "server-stopping",
+    SteamcmdUpdating = "steamcmd-updating",
+    PluginInstalling = "plugin-installing",
+    PluginUninstalling = "plugin-uninstalling"
 }
 
 export class Status {
-    hostname: string | undefined
-    server: ServerStatus | undefined
-    steamcmd: SteamcmdStatus | undefined
-    player_count: number | undefined
-    max_player_count: number | undefined
-    map: string | undefined
-    ip: string | undefined
-    port: string | undefined
-    password: string | undefined
+    state: State;
+    hostname: string;
+    player_count: number;
+    max_player_count: number;
+    map: string;
+    ip: string;
+    port: string;
+    password: string;
 }
 
 export class LogEntry {
@@ -34,26 +31,23 @@ export class LogEntry {
     message: string | undefined
 }
 
-export async function startServer() {
-    const resp = await PostWithoutResponse("/start")
-    handleErrorResponse("Failed to start server", resp)
+export function startServer() {
+    PostWithoutResponse("/start").then(value => handleErrorResponse("Failed to start server", value))
 }
 
-export async function stopServer() {
-    const resp = await PostWithoutResponse("/stop")
-    handleErrorResponse("Failed to stop server", resp)
+export function stopServer() {
+    PostWithoutResponse("/stop").then(value => handleErrorResponse("Failed to stop server", value))
 }
 
-export async function restartServer() {
-    let resp = await PostWithoutResponse("/stop")
-    handleErrorResponseWithMessage("Failed to restart server", "Server failed to stop", resp)
-    resp = await PostWithoutResponse("/start")
-    handleErrorResponse("Failed to restart server", resp)
+export function restartServer() {
+    PostWithoutResponse("/stop").then(value => {
+        handleErrorResponseWithMessage("Failed to restart server", "Server failed to stop", value)
+        PostWithoutResponse("/start").then(value => handleErrorResponse("Failed to restart server", value))
+    })
 }
 
-export async function sendCommand(command: string) {
-    const resp = await Post<SendCommandResponse>(`/send-command?command=${command}`)
-    handleErrorResponse("Failed to send command", resp)
+export function sendCommandWithoutResponse(command: string) {
+    Post<SendCommandResponse>(`/send-command?command=${command}`).then(value => handleErrorResponse("Failed to send command", value))
 }
 
 export async function startUpdate() {

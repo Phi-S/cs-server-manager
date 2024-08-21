@@ -89,7 +89,7 @@ func createRequiredServices(cfg config.Config) (
 	gameEventsInstance := game_events.Instance{}
 
 	pluginsJsonFilePath := filepath.Join(cfg.DataDir, "plugins.json")
-	installedPluginsJsonPath := filepath.Join(cfg.DataDir, "installed-plugins.json")
+	installedPluginsJsonPath := filepath.Join(cfg.DataDir, "installed-plugin.json")
 	csgoDirPath := filepath.Join(cfg.ServerDir, "game", "csgo")
 	pluginsInstance, err := plugins.New(csgoDirPath, pluginsJsonFilePath, installedPluginsJsonPath)
 	if err != nil {
@@ -135,7 +135,7 @@ func registerEvents(
 	// update status if start parameters get changed (only applies if server is stopped / status gets updated on server start anyway)
 	startParametersJfileInstance.OnUpdated(func(data event.PayloadWithData[server.StartParameters]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			if internalStatus.Server == status.ServerStatusStopped {
+			if internalStatus.State == status.Idle {
 				internalStatus.Hostname = data.Data.Hostname
 				internalStatus.Map = data.Data.StartMap
 				internalStatus.MaxPlayerCount = data.Data.MaxPlayers
@@ -146,7 +146,7 @@ func registerEvents(
 
 	serverInstance.OnStarting(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Server = status.ServerStatusStarting
+			internalStatus.State = status.ServerStarting
 		})
 	})
 
@@ -162,7 +162,7 @@ func registerEvents(
 		}
 
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Server = status.ServerStatusStarted
+			internalStatus.State = status.ServerStarted
 			internalStatus.Hostname = e.Data.Hostname
 			internalStatus.MaxPlayerCount = e.Data.MaxPlayers
 			internalStatus.Map = e.Data.StartMap
@@ -172,13 +172,13 @@ func registerEvents(
 
 	serverInstance.OnCrashed(func(p event.PayloadWithData[error]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Server = status.ServerStatusStopped
+			internalStatus.State = status.Idle
 		})
 	})
 
 	serverInstance.OnStopped(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Server = status.ServerStatusStopped
+			internalStatus.State = status.Idle
 		})
 	})
 
@@ -191,25 +191,25 @@ func registerEvents(
 
 	steamcmdInstance.OnStarted(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Steamcmd = status.SteamcmdStatusUpdating
+			internalStatus.State = status.SteamcmdUpdating
 		})
 	})
 
 	steamcmdInstance.OnFinished(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Steamcmd = status.SteamcmdStatusStopped
+			internalStatus.State = status.Idle
 		})
 	})
 
 	steamcmdInstance.OnCancelled(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Steamcmd = status.SteamcmdStatusStopped
+			internalStatus.State = status.Idle
 		})
 	})
 
 	steamcmdInstance.OnFailed(func(p event.PayloadWithData[error]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			internalStatus.Steamcmd = status.SteamcmdStatusStopped
+			internalStatus.State = status.Idle
 		})
 	})
 
@@ -229,6 +229,43 @@ func registerEvents(
 	gameEventsInstance.OnPlayerDisconnected(func(p event.PayloadWithData[string]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.PlayerCount--
+		})
+	})
+
+	//plugins
+	pluginsInstance.OnPluginInstalling(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			internalStatus.State = status.PluginInstalling
+		})
+	})
+
+	pluginsInstance.OnPluginInstalled(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			internalStatus.State = status.Idle
+		})
+	})
+
+	pluginsInstance.OnPluginInstallationFailedEvent(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			internalStatus.State = status.Idle
+		})
+	})
+
+	pluginsInstance.OnPluginUninstallingEvent(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			internalStatus.State = status.PluginUninstalling
+		})
+	})
+
+	pluginsInstance.OnPluginUninstalledEvent(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			internalStatus.State = status.Idle
+		})
+	})
+
+	pluginsInstance.OnPluginUninstallFailedEvent(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			internalStatus.State = status.Idle
 		})
 	})
 }

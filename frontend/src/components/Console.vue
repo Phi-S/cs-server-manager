@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import {logEntries, status} from '@/state';
 import moment from 'moment';
 import {onMounted, ref} from 'vue';
-import {type LogEntry, sendCommand, ServerStatus} from "@/api/server";
+import {type LogEntry, sendCommandWithoutResponse, State} from "@/api/server";
+import {useStatusStore} from "@/stores/status";
+import {useLogsStore} from "@/stores/logs";
+
+const statusStore = useStatusStore()
+const logsStore = useLogsStore()
 
 const command = ref("");
 
@@ -22,7 +26,7 @@ function getLogBackgroundColor(log: LogEntry): string {
 }
 
 async function sendCommandIfServerIsRunning() {
-  if (status.value?.server !== ServerStatus.ServerStatusStarted) {
+  if (statusStore.state !== State.ServerStarted) {
     return
   }
 
@@ -30,7 +34,7 @@ async function sendCommandIfServerIsRunning() {
     return
   }
 
-  await sendCommand(command.value)
+  await sendCommandWithoutResponse(command.value)
 }
 
 onMounted(() => {
@@ -44,7 +48,7 @@ onMounted(() => {
       <input id="command-input" v-on:keyup.enter="sendCommandIfServerIsRunning" v-model="command"
              class="input-group-text" style="width: 70%" placeholder="Server command"/>
       <button @click="sendCommandIfServerIsRunning"
-              :disabled="status?.server !== ServerStatus.ServerStatusStarted" class="btn btn-outline-info"
+              :disabled="statusStore.state !== State.ServerStarted" class="btn btn-outline-info"
               style="width: 30%">Send
       </button>
     </div>
@@ -52,7 +56,7 @@ onMounted(() => {
 
   <div class="overflow-x-scroll rounded-3 border border-2" style="height: calc(100% - 40px);">
     <table class="table table-sm table-striped">
-      <tr v-for="log in logEntries" :class="[getLogBackgroundColor(log), 'border-bottom']">
+      <tr v-for="log in logsStore.sortedByDate" :class="[getLogBackgroundColor(log), 'border-bottom']">
         <td class="ps-2 pe-2 pt-1 text-nowrap border-end">
           {{ timestampString(log.timestamp as string) }}
         </td>

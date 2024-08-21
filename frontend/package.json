@@ -11,11 +11,12 @@
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {
-    "vue": "^3.4.29",
-    "vue-router": "^4.3.3",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "pinia": "^2.2.2",
+    "vue": "^3.4.29",
+    "vue-router": "^4.3.3"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",

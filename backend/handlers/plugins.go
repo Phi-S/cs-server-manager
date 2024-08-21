@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"cs-server-manager/constants"
-	"cs-server-manager/gvalidator"
 	"cs-server-manager/plugins"
 	"fmt"
 	"github.com/gofiber/fiber/v3"
@@ -32,7 +31,7 @@ func GetAvailablePluginsHandler(c fiber.Ctx) error {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	installedPlugins, err := pluginsInstance.GetInstalledPlugins()
+	installedPlugin, err := pluginsInstance.GetInstalledPlugin()
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
@@ -58,10 +57,7 @@ func GetAvailablePluginsHandler(c fiber.Ctx) error {
 				Dependencies: versionDependencies,
 			}
 
-			if isPluginVersionInstalled(plugin, version.Name, installedPlugins) {
-				versionResponse.Installed = true
-			}
-
+			versionResponse.Installed = installedPlugin != nil && installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name
 			versions = append(versions, versionResponse)
 		}
 
@@ -76,46 +72,71 @@ func GetAvailablePluginsHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-func isPluginVersionInstalled(plugin plugins.Plugin, versionName string, installedPlugins []plugins.InstalledPlugin) bool {
-	for _, installedPlugin := range installedPlugins {
-		if plugin.Name == installedPlugin.Name && versionName == installedPlugin.Version {
-			return true
-		}
-	}
-
-	return false
-}
-
 func InstallPluginHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
+	lock, serverInstance, steamcmdInstance, err := GetServerSteamcmdInstances(c)
+	if err != nil {
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("GetServerSteamcmdInstances: %w", err))
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+	if serverInstance.IsRunning() {
+		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not install plugins while server is running")
+	}
+
+	if steamcmdInstance.IsRunning() {
+		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not install plugins while steamcmd is running")
+	}
+
 	pluginName := c.Query("name")
 	versionName := c.Query("version")
 
-	if err := gvalidator.Instance().Var(pluginName, "required,lte=32"); err != nil {
-		return NewErrorWithInternal(c, fiber.StatusBadRequest, "plugin name is not valid", err)
-	}
-
-	if err := gvalidator.Instance().Var(versionName, "required,lte=32"); err != nil {
-		return NewErrorWithInternal(c, fiber.StatusBadRequest, "version name is not valid", err)
-	}
-
-	installedPlugins, err := pluginsInstance.GetInstalledPlugins()
+	installedPlugin, err := pluginsInstance.GetInstalledPlugin()
 	if err != nil {
-		return NewInternalServerErrorWithInternal(c, fmt.Errorf("GetInstalledPlugins: %w", err))
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("GetInstalledPlugin: %w", err))
 	}
 
-	for _, plugin := range installedPlugins {
-		if plugin.Name == pluginName && plugin.Version == versionName {
-			return c.SendStatus(fiber.StatusAlreadyReported)
-		}
+	if installedPlugin != nil && installedPlugin.Name == pluginName && installedPlugin.Version == versionName {
+		return c.SendStatus(fiber.StatusAlreadyReported)
 	}
 
 	if err := pluginsInstance.InstallPluginByName(pluginName, versionName); err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func UninstallPluginHandler(c fiber.Ctx) error {
+	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
+	if err != nil {
+		return NewInternalServerErrorWithInternal(c, err)
+	}
+
+	lock, serverInstance, steamcmdInstance, err := GetServerSteamcmdInstances(c)
+	if err != nil {
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("GetServerSteamcmdInstances: %w", err))
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+	if serverInstance.IsRunning() {
+		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not uninstall plugins while server is running")
+	}
+
+	if steamcmdInstance.IsRunning() {
+		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not uninstall plugins while steamcmd is running")
+	}
+
+	pluginName := c.Query("name")
+
+	if err := pluginsInstance.Uninstall(pluginName); err != nil {
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("pluginsInstance.Uninstall: %w", err))
 	}
 
 	return c.SendStatus(fiber.StatusOK)

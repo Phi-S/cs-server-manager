@@ -6,6 +6,6 @@ export function navigateTo(url) {
     window.location.href = url;
 }
 
-export function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text);
+export function copyToClipboard(text: string): Promise<void> {
+    return navigator.clipboard.writeText(text);
 }
