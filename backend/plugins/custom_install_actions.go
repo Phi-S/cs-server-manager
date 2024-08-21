@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func metamod_install(gameinfoPath string) error {
+func metamodInstall(gameinfoPath string) error {
 	if err := gvalidator.Instance().Var(gameinfoPath, "required,file"); err != nil {
 		return fmt.Errorf("gameinfo.gi path '%v' is not valid %w", gameinfoPath, err)
 	}
@@ -73,7 +73,7 @@ func metamod_install(gameinfoPath string) error {
 	return nil
 }
 
-func metamod_uninstall(gameinfoPath string) error {
+func metamodUninstall(gameinfoPath string) error {
 	if err := gvalidator.Instance().Var(gameinfoPath, "required,file"); err != nil {
 		return fmt.Errorf("gameinfo.gi path '%v' is not valid %w", gameinfoPath, err)
 	}

@@ -101,7 +101,11 @@ func logEvents(
 	})
 
 	// plugins
-	pluginsInstance.OnPluginInstalled(func(p event.PayloadWithData[plugins.OnPluginInstalledEventData]) {
+	pluginsInstance.OnPluginInstalled(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
 		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("Plugin '%v(%v)' installed", p.Data.Name, p.Data.Version))
+	})
+
+	pluginsInstance.OnPluginUninstalledEvent(func(p event.PayloadWithData[plugins.PluginEventsPayload]) {
+		handleEvent(systemInfoLogType, p.TriggeredAtUtc, fmt.Sprintf("Plugin '%v' uninstalled", p.Data.Name))
 	})
 }

@@ -12,8 +12,7 @@ func NewStatus(hostname string, ip string, port string, password string, maxPlay
 	instance := Status{
 		internalStatus: &InternalStatus{
 			Hostname:       hostname,
-			Server:         ServerStatusStopped,
-			Steamcmd:       SteamcmdStatusStopped,
+			State:          Idle,
 			PlayerCount:    0,
 			MaxPlayerCount: maxPlayerCount,
 			Map:            startMap,
@@ -26,32 +25,27 @@ func NewStatus(hostname string, ip string, port string, password string, maxPlay
 	return &instance
 }
 
-type ServerStatus string
+type State string
 
 const (
-	ServerStatusStarted  ServerStatus = "server-status-started"
-	ServerStatusStarting ServerStatus = "server-status-starting"
-	ServerStatusStopped  ServerStatus = "server-status-stopped"
-	ServerStatusStopping ServerStatus = "server-status-stopping"
-)
-
-type SteamcmdStatus string
-
-const (
-	SteamcmdStatusStopped  SteamcmdStatus = "steamcmd-status-stopped"
-	SteamcmdStatusUpdating SteamcmdStatus = "steamcmd-status-updating"
+	Idle               State = "idle"
+	ServerStarting     State = "server-starting"
+	ServerStarted      State = "server-started"
+	ServerStopping     State = "server-stopping"
+	SteamcmdUpdating   State = "steamcmd-updating"
+	PluginInstalling   State = "plugin-installing"
+	PluginUninstalling State = "plugin-uninstalling"
 )
 
 type InternalStatus struct {
-	Hostname       string         `json:"hostname"`
-	Server         ServerStatus   `json:"server"`
-	Steamcmd       SteamcmdStatus `json:"steamcmd"`
-	PlayerCount    uint8          `json:"player_count"`
-	MaxPlayerCount uint8          `json:"max_player_count"`
-	Map            string         `json:"map"`
-	Ip             string         `json:"ip"`
-	Port           string         `json:"port"`
-	Password       string         `json:"password"`
+	State          State  `json:"state"`
+	Hostname       string `json:"hostname"`
+	PlayerCount    uint8  `json:"player_count"`
+	MaxPlayerCount uint8  `json:"max_player_count"`
+	Map            string `json:"map"`
+	Ip             string `json:"ip"`
+	Port           string `json:"port"`
+	Password       string `json:"password"`
 }
 
 type Status struct {

@@ -4,6 +4,7 @@ import (
 	"cs-server-manager/constants"
 	"cs-server-manager/server"
 	"cs-server-manager/steamcmd"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -12,6 +13,11 @@ import (
 
 func NewErrorWithInternal(c fiber.Ctx, code int, message string, internalError error) error {
 	c.Locals(constants.InternalErrorKey, internalError)
+	return fiber.NewError(code, message)
+}
+
+func NewErrorWithMessage(c fiber.Ctx, code int, message string) error {
+	c.Locals(constants.InternalErrorKey, errors.New(message))
 	return fiber.NewError(code, message)
 }
 

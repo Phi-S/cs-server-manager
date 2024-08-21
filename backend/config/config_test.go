@@ -2,14 +2,9 @@ package config_test
 
 import (
 	"cs-server-manager/config"
-	globalvalidator "cs-server-manager/gvalidator"
 	"os"
 	"testing"
 )
-
-func init() {
-	globalvalidator.Init()
-}
 
 func TestGetEnvWithDefaultValue_port_OK(t *testing.T) {
 	testEnvKey := "test-env-key"

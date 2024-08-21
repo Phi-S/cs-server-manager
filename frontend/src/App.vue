@@ -3,6 +3,8 @@ import {RouterView} from 'vue-router';
 import MiniServer from './components/MiniServer.vue';
 import ErrorDisplay from "@/components/ErrorDisplay.vue";
 import router from "@/router";
+import {connected} from "@/webSocket";
+import OverlaySpinner from "@/components/OverlaySpinner.vue";
 
 function navigateToHome() {
   router.push("/")
@@ -10,6 +12,8 @@ function navigateToHome() {
 </script>
 
 <template>
+  <OverlaySpinner message="connecting..." v-if="connected === false"/>
+
   <div class="container-lg">
 
     <ErrorDisplay></ErrorDisplay>

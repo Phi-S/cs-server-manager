@@ -9,7 +9,7 @@ function isValidHostname(hostname: string): boolean {
     return hostnameRegex.test(hostname) || hostnamePortRegex.test(hostname);
 }
 
-export function Setup(backendAddress: string | undefined, useTls: boolean | undefined) {
+export function SetupApi(backendAddress: string | undefined, useTls: boolean | undefined) {
     const apiPath = "/api/v1"
 
     if (backendAddress == null || backendAddress == "" || !isValidHostname(backendAddress)) {

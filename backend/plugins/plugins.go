@@ -5,7 +5,6 @@ import (
 	"cs-server-manager/download/unzip"
 	"cs-server-manager/event"
 	"cs-server-manager/gvalidator"
-	"cs-server-manager/jfile"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -15,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,7 +23,7 @@ type Plugin struct {
 	Description string    `json:"description" validate:"omitempty,printascii,lt=512"`
 	URL         string    `json:"url" validate:"required,url,lt=256"`
 	InstallDir  string    `json:"install_dir" validate:"required,dirpath,lt=256"`
-	Versions    []Version `json:"versions" validate:"dive"`
+	Versions    []Version `json:"versions" validate:"required,dive"`
 }
 
 type Version struct {
@@ -38,25 +38,34 @@ type Dependency struct {
 }
 
 type InstalledPlugin struct {
-	Name           string    `json:"name" validate:"required,lt=32"`
-	Version        string    `json:"version" validate:"required,lt=32"`
-	InstalledAtUtc time.Time `json:"installed_at_utc" validate:"required,lt=32"`
-	Files          []string  `json:"files" validate:"required"`
+	Name           string            `json:"name" validate:"required,lt=32"`
+	Version        string            `json:"version" validate:"required,lt=32"`
+	InstalledAtUtc time.Time         `json:"installed_at_utc" validate:"required,lt=32"`
+	Files          []string          `json:"files" validate:"required"`
+	Dependencies   []InstalledPlugin `json:"dependencies" validate:"dive"`
 }
 
-type OnPluginInstalledEventData struct {
+type PluginEventsPayload struct {
 	Name    string
 	Version string
 }
 
 type Instance struct {
-	lock    sync.Mutex
-	csgoDir string
+	running                     atomic.Bool
+	lock                        sync.Mutex
+	installedPluginJsonFileLock sync.Mutex
 
-	installedPluginJfile *jfile.Instance[[]InstalledPlugin]
-	plugins              []Plugin
+	csgoDir                     string
+	installedPluginJsonFilePath string
 
-	onPluginInstalledEvent event.InstanceWithData[OnPluginInstalledEventData]
+	plugins []Plugin
+
+	onPluginInstallingEvent         event.InstanceWithData[PluginEventsPayload]
+	onPluginInstalledEvent          event.InstanceWithData[PluginEventsPayload]
+	onPluginInstallationFailedEvent event.InstanceWithData[PluginEventsPayload]
+	onPluginUninstallingEvent       event.InstanceWithData[PluginEventsPayload]
+	onPluginUninstalledEvent        event.InstanceWithData[PluginEventsPayload]
+	onPluginUninstallFailedEvent    event.InstanceWithData[PluginEventsPayload]
 }
 
 var (
@@ -64,17 +73,34 @@ var (
 	defaultPluginsJsonData []byte
 )
 
-func New(csgoDir string, pluginsJsonFilePath string, installedPluginsJsonPath string) (*Instance, error) {
+func New(csgoDir string, pluginsJsonFilePath string, installedPluginJsonPath string) (*Instance, error) {
 	if err := gvalidator.Instance().Var(csgoDir, "required,dir"); err != nil {
-		return nil, fmt.Errorf("csgoDir %v is not valid %w", csgoDir, err)
+		return nil, fmt.Errorf("csgoDir '%v' is not valid %w", csgoDir, err)
 	}
 
 	if err := gvalidator.Instance().Var(pluginsJsonFilePath, "required,filepath"); err != nil {
-		return nil, fmt.Errorf("pluginsJsonFilePath %v is not valid %w", pluginsJsonFilePath, err)
+		return nil, fmt.Errorf("pluginsJsonFilePath '%v' is not valid %w", pluginsJsonFilePath, err)
 	}
 
-	if err := gvalidator.Instance().Var(installedPluginsJsonPath, "required,filepath"); err != nil {
-		return nil, fmt.Errorf("installedPluginsJsonPath %v is not valid %w", installedPluginsJsonPath, err)
+	if err := gvalidator.Instance().Var(installedPluginJsonPath, "required,filepath"); err != nil {
+		return nil, fmt.Errorf("installedPluginJsonPath '%v' is not valid %w", installedPluginJsonPath, err)
+	}
+
+	unmarshalPluginsJson := func(pluginsJsonContent []byte) ([]Plugin, error) {
+		var plugins []Plugin
+		if err := json.Unmarshal(pluginsJsonContent, &plugins); err != nil {
+			return nil, fmt.Errorf("failed to unmashal plugins.json '%v' %w", pluginsJsonFilePath, err)
+		}
+
+		if plugins == nil {
+			return nil, fmt.Errorf("plugins is nil. failed to get plugins from '%v'", pluginsJsonFilePath)
+		}
+
+		if err := gvalidator.Instance().Var(plugins, "dive"); err != nil {
+			return nil, fmt.Errorf("validation of plugins.json content failed '%v' %w", pluginsJsonFilePath, err)
+		}
+
+		return plugins, nil
 	}
 
 	var plugins []Plugin
@@ -83,213 +109,253 @@ func New(csgoDir string, pluginsJsonFilePath string, installedPluginsJsonPath st
 			return nil, fmt.Errorf("failed to read plugins.json at '%v' %w", pluginsJsonFilePath, err)
 		}
 
-		// create default/embedded plugins.json is none exists
-		if err := os.WriteFile(pluginsJsonFilePath, defaultPluginsJsonData, os.ModePerm); err != nil {
-			return nil, fmt.Errorf("failed to create default plugins.json file at '%v' %w", pluginsJsonFilePath, err)
+		plugins, err = unmarshalPluginsJson(defaultPluginsJsonData)
+		if err != nil {
+			return nil, fmt.Errorf("unmarshalPluginsJson(defaultPluginsJsonData): %w", err)
+		}
+	} else {
+		pluginsJsonContent, err := os.ReadFile(pluginsJsonFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read plugins.json %w", err)
+		}
+
+		plugins, err = unmarshalPluginsJson(pluginsJsonContent)
+		if err != nil {
+			return nil, fmt.Errorf(" unmarshalPluginsJson(pluginsJsonContent): %w", err)
 		}
 	}
 
-	pluginsJson, err := os.ReadFile(pluginsJsonFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read plugins.json %w", err)
-	}
-
-	if err := json.Unmarshal(pluginsJson, &plugins); err != nil {
-		return nil, fmt.Errorf("failed to unmashal plugins.json '%v' %w", pluginsJsonFilePath, err)
-	}
-
-	if plugins == nil {
-		return nil, fmt.Errorf("plugins is nil. failed to get plugins from '%v'", pluginsJsonFilePath)
-	}
-
-	if err := gvalidator.Instance().Var(plugins, "dive"); err != nil {
-		return nil, fmt.Errorf("validation of plugins.json content failed '%v' %w", pluginsJsonFilePath, err)
-	}
-
-	installedPluginsJfile, err := jfile.New[[]InstalledPlugin](installedPluginsJsonPath, make([]InstalledPlugin, 0))
-	if err != nil {
-		return nil, fmt.Errorf("installedPluginsJson jfile.New: %w", err)
-	}
-
 	instance := &Instance{
-		csgoDir:              csgoDir,
-		installedPluginJfile: installedPluginsJfile,
-		plugins:              plugins,
+		csgoDir:                     csgoDir,
+		installedPluginJsonFilePath: installedPluginJsonPath,
+		plugins:                     plugins,
+	}
+
+	if err := instance.writeInstalledPluginsJsonFile(nil); err != nil {
+		return nil, fmt.Errorf("writeInstalledPluginsJsonFile(nil): %w", err)
 	}
 
 	return instance, nil
+}
+
+func (i *Instance) readInstalledPluginsJsonFile() (*InstalledPlugin, error) {
+	i.installedPluginJsonFileLock.Lock()
+	defer i.installedPluginJsonFileLock.Unlock()
+
+	content, err := os.ReadFile(i.installedPluginJsonFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("os.ReadFile: %w", err)
+	}
+
+	contentJson := string(content)
+	if contentJson == "{}" {
+		return nil, nil
+	}
+
+	var installedPlugin InstalledPlugin
+	if err := json.Unmarshal(content, &installedPlugin); err != nil {
+		return nil, fmt.Errorf("json.Unmarshal: %w", err)
+	}
+
+	if err := gvalidator.Instance().Struct(installedPlugin); err != nil {
+		return nil, fmt.Errorf("validate: %w", err)
+	}
+
+	return &installedPlugin, nil
+}
+
+func (i *Instance) writeInstalledPluginsJsonFile(plugin *InstalledPlugin) error {
+	i.installedPluginJsonFileLock.Lock()
+	defer i.installedPluginJsonFileLock.Unlock()
+
+	if _, err := os.Stat(i.installedPluginJsonFilePath); err == nil {
+		if err := os.Remove(i.installedPluginJsonFilePath); err != nil {
+			return fmt.Errorf("remove old installedPluginJsonFile: %w", err)
+		}
+	} else if errors.Is(err, os.ErrNotExist) == false {
+		return fmt.Errorf("os.Stats: %w", err)
+	}
+
+	if plugin == nil {
+		if err := os.WriteFile(i.installedPluginJsonFilePath, []byte("{}"), os.ModePerm); err != nil {
+			return fmt.Errorf("os.WriteFile empty: %w", err)
+		}
+	} else {
+		if err := gvalidator.Instance().Struct(*plugin); err != nil {
+			return fmt.Errorf("validation: %w", err)
+		}
+
+		jsonContent, err := json.MarshalIndent(*plugin, "", "    ")
+		if err != nil {
+			return fmt.Errorf("json.MarshalIndent: %w", err)
+		}
+
+		if err := os.WriteFile(i.installedPluginJsonFilePath, jsonContent, os.ModePerm); err != nil {
+			return fmt.Errorf("os.WriteFile: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (i *Instance) GetAllAvailablePlugins() []Plugin {
 	return i.plugins
 }
 
-func (i *Instance) GetInstalledPlugins() ([]InstalledPlugin, error) {
-	installedPlugins, err := i.installedPluginJfile.Read()
+func (i *Instance) GetInstalledPlugin() (*InstalledPlugin, error) {
+	installedPlugin, err := i.readInstalledPluginsJsonFile()
 	if err != nil {
-		return nil, fmt.Errorf("installedPluginJfile: %w", err)
+		return nil, fmt.Errorf("readInstalledPluginsJsonFile: %w", err)
 	}
-	return *installedPlugins, nil
+	return installedPlugin, nil
 }
 
-func (i *Instance) InstallPluginByName(pluginName string, versionName string) error {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	if err := i.installPluginByNameInternal(pluginName, versionName); err != nil {
-		return err
-	}
-
-	i.onPluginInstalledEvent.Trigger(OnPluginInstalledEventData{Name: pluginName, Version: versionName})
-	return nil
+func (i *Instance) OnPluginInstalling(handler func(data event.PayloadWithData[PluginEventsPayload])) {
+	i.onPluginInstallingEvent.Register(handler)
 }
 
-func (i *Instance) OnPluginInstalled(handler func(data event.PayloadWithData[OnPluginInstalledEventData])) {
+func (i *Instance) OnPluginInstalled(handler func(data event.PayloadWithData[PluginEventsPayload])) {
 	i.onPluginInstalledEvent.Register(handler)
 }
 
-func (i *Instance) installPluginByNameInternal(pluginName string, versionName string) error {
-	if err := gvalidator.Instance().Var(pluginName, "required,lt=64"); err != nil {
-		return fmt.Errorf("pluginName %v is not valid %w", pluginName, err)
+func (i *Instance) OnPluginInstallationFailedEvent(handler func(data event.PayloadWithData[PluginEventsPayload])) {
+	i.onPluginInstallationFailedEvent.Register(handler)
+}
+
+func (i *Instance) OnPluginUninstallingEvent(handler func(data event.PayloadWithData[PluginEventsPayload])) {
+	i.onPluginUninstallingEvent.Register(handler)
+}
+
+func (i *Instance) OnPluginUninstalledEvent(handler func(data event.PayloadWithData[PluginEventsPayload])) {
+	i.onPluginUninstalledEvent.Register(handler)
+}
+
+func (i *Instance) OnPluginUninstallFailedEvent(handler func(data event.PayloadWithData[PluginEventsPayload])) {
+	i.onPluginUninstallFailedEvent.Register(handler)
+}
+
+func (i *Instance) InstallPluginByName(pluginName string, versionName string) error {
+	if i.running.Load() {
+		return fmt.Errorf("another plugin is currently getting installed/uninstalled")
 	}
 
-	if err := gvalidator.Instance().Var(versionName, "required,lt=64"); err != nil {
-		return fmt.Errorf("versionName %v is not valid %w", versionName, err)
-	}
+	i.running.Store(true)
+	defer i.running.Store(false)
 
-	plugin, version, err := i.getPluginAndVersionByName(pluginName, versionName)
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	eventPayload := PluginEventsPayload{Name: pluginName, Version: versionName}
+	i.onPluginInstallingEvent.Trigger(eventPayload)
+	installedPlugin, err := i.installPluginByNameInternal(pluginName, versionName, false)
 	if err != nil {
-		return fmt.Errorf("getPluginAndVersionByName: %w", err)
+		i.onPluginInstallationFailedEvent.Trigger(eventPayload)
+		return err
 	}
 
-	for _, dependency := range version.Dependencies {
-		err := i.installPluginByNameInternal(dependency.PluginName, dependency.VersionName)
-		if err != nil {
-			return fmt.Errorf("InstallPluginDependency: plugin %v | version %v | dependecy plugin %v | dependency version %v %w",
-				plugin.Name, version.Name, dependency.PluginName, dependency.VersionName, err)
+	if err := i.writeInstalledPluginsJsonFile(&installedPlugin); err != nil {
+		if uninstallErr := i.uninstallInternal(installedPlugin); uninstallErr != nil {
+			slog.Error("failed to uninstall plugin ", "plugin", pluginName, "error", err)
 		}
-	}
-
-	err = i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
-		installedPlugin := InstalledPlugin{
-			Name:           plugin.Name,
-			Version:        version.Name,
-			InstalledAtUtc: time.Now().UTC(),
-			Files:          make([]string, 0),
-		}
-		if currentData == nil {
-			*currentData = []InstalledPlugin{installedPlugin}
-		} else {
-			*currentData = append(*currentData, installedPlugin)
-		}
-	})
-	if err != nil {
 		return fmt.Errorf("installedPluginJfile.Update: %w", err)
 	}
 
-	unzippedFiles, err := i.downloadAndUnzip(plugin, version.DownloadURL)
-	if err != nil {
-		revertInstalledPluginsJsonErr := i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
-			for i, installedPlugin := range *currentData {
-				if installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name {
-					*currentData = append((*currentData)[:i], (*currentData)[i+1:]...)
-					return
-				}
-			}
-		})
-		if revertInstalledPluginsJsonErr != nil {
-			return fmt.Errorf("revert installedPluginJfile update: %w", err)
-		}
-		return fmt.Errorf("downloadAndUnzip: %w", err)
-	}
-
-	err = i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
-		for i, installedPlugin := range *currentData {
-			if installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name {
-				(*currentData)[i].Files = unzippedFiles
-				return
-			}
-		}
-	})
-	if err != nil {
-		return fmt.Errorf("failed to update files in installed-plugins.json %w", err)
-	}
-
-	// additional plugin actions
-	if pluginName == "metamod_source" {
-		gaminfoPaht := filepath.Join(i.csgoDir, "gameinfo.gi")
-		if err := metamod_install(gaminfoPaht); err != nil {
-			revertInstalledPluginsJsonErr := i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
-				for i, installedPlugin := range *currentData {
-					if installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name {
-						*currentData = append((*currentData)[:i], (*currentData)[i+1:]...)
-						return
-					}
-				}
-			})
-			if revertInstalledPluginsJsonErr != nil {
-				return fmt.Errorf("revert installedPluginJfile update: %w", err)
-			}
-
-			return fmt.Errorf("failed to perfomace additional action after plugin installation '%v' %w", pluginName, err)
-		}
-	}
-
+	i.onPluginInstalledEvent.Trigger(eventPayload)
 	return nil
+}
+
+func (i *Instance) installPluginByNameInternal(pluginName string, versionName string, isDependency bool) (InstalledPlugin, error) {
+	plugin, version, err := i.getPluginAndVersionByName(pluginName, versionName)
+	if err != nil {
+		return InstalledPlugin{}, fmt.Errorf("getPluginAndVersionByName: %w", err)
+	}
+
+	installedPlugins, err := i.GetInstalledPlugin()
+	if err != nil {
+		return InstalledPlugin{}, fmt.Errorf("GetInstalledPlugin: %w", err)
+	}
+
+	if isDependency == false && installedPlugins != nil {
+		return InstalledPlugin{}, fmt.Errorf("another plugin is already installed '%v'", installedPlugins)
+	}
+
+	dependencies := make([]InstalledPlugin, 0)
+	for _, dependency := range version.Dependencies {
+		installedPlugin, err := i.installPluginByNameInternal(dependency.PluginName, dependency.VersionName, true)
+		if err != nil {
+			return InstalledPlugin{}, fmt.Errorf("InstallPluginDependency: for: plugin %v | version %v | dependecy: plugin %v | version %v %w",
+				plugin.Name, version.Name, dependency.PluginName, dependency.VersionName, err)
+		}
+		dependencies = append(dependencies, installedPlugin)
+	}
+
+	files, err := i.downloadAndInstall(plugin.Name, plugin.InstallDir, version.DownloadURL)
+	if err != nil {
+		return InstalledPlugin{}, fmt.Errorf("downloadAndInstall: %w", err)
+	}
+
+	return InstalledPlugin{
+		Name:           plugin.Name,
+		Version:        version.Name,
+		InstalledAtUtc: time.Now().UTC(),
+		Dependencies:   dependencies,
+		Files:          files,
+	}, nil
 }
 
 func (i *Instance) Uninstall(pluginName string) error {
-	if err := gvalidator.Instance().Var(pluginName, "required,lt=64"); err != nil {
-		return fmt.Errorf("pluginName %v is not valid %w", pluginName, err)
+	if i.running.Load() {
+		return fmt.Errorf("another plugin is currently getting installed/uninstalled")
 	}
 
-	_, err := i.getPluginByName(pluginName)
+	i.running.Store(true)
+	defer i.running.Store(false)
+
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	installedPlugin, err := i.GetInstalledPlugin()
 	if err != nil {
-		return fmt.Errorf("getPluginByName: %w", err)
+		return fmt.Errorf("GetInstalledPlugin: %w", err)
+	}
+	eventPayload := PluginEventsPayload{Name: pluginName}
+
+	i.onPluginUninstallingEvent.Trigger(eventPayload)
+	if err := i.uninstallInternal(*installedPlugin); err != nil {
+		i.onPluginUninstallFailedEvent.Trigger(eventPayload)
+		return fmt.Errorf("uninstallInternal: %w", err)
 	}
 
-	var uninstallErr error
-	err = i.installedPluginJfile.Update(func(currentData *[]InstalledPlugin) {
-		for i, installedPlugin := range *currentData {
-			if installedPlugin.Name == pluginName {
-				for _, file := range installedPlugin.Files {
-					if err := os.RemoveAll(file); err != nil {
-						uninstallErr = fmt.Errorf("failed to remove installed file '%v' %w", file, err)
-						return
-					}
-				}
+	if err := i.writeInstalledPluginsJsonFile(nil); err != nil {
+		return fmt.Errorf("installedPluginJfile.Update: %w", err)
+	}
 
-				*currentData = append((*currentData)[:i], (*currentData)[i+1:]...)
-				return
-			}
+	i.onPluginUninstalledEvent.Trigger(eventPayload)
+	return nil
+}
+
+func (i *Instance) uninstallInternal(plugin InstalledPlugin) error {
+	for _, dependency := range plugin.Dependencies {
+		if err := i.uninstallInternal(dependency); err != nil {
+			return fmt.Errorf("failed to uninstall dependencies '%v' of plugin '%v' %w", dependency.Name, plugin.Name, err)
 		}
-	})
-	if uninstallErr != nil {
-		return fmt.Errorf("uninstallErr: %w", uninstallErr)
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to update installed-plugins.json after uninstall %w", err)
+	for _, file := range plugin.Files {
+		if err := os.Remove(file); err != nil {
+			return fmt.Errorf("failed to remove file '%v' %w", file, err)
+		}
 	}
 
 	// additional plugin actions
-	if pluginName == "metamod_source" {
+	if plugin.Name == "metamod_source" {
 		gaminfoPaht := filepath.Join(i.csgoDir, "gameinfo.gi")
-		if err := metamod_uninstall(gaminfoPaht); err != nil {
-			slog.Error(fmt.Errorf("metamod uninstalled successfully but failed to perfomace additional action after plugin removal '%v' %w", pluginName, err).Error())
+		if err := metamodUninstall(gaminfoPaht); err != nil {
+			// TODO: should return error????
+			slog.Error(fmt.Errorf("metamod uninstalled successfully but failed to perfomace additional action after plugin removal '%v' %w", plugin.Name, err).Error())
 		}
 	}
 
 	return nil
-}
-
-func (i *Instance) getPluginByName(pluginName string) (Plugin, error) {
-	for _, plugin := range i.plugins {
-		if plugin.Name == pluginName {
-			return plugin, nil
-		}
-	}
-
-	return Plugin{}, fmt.Errorf("plugin '%v' not found", pluginName)
 }
 
 func (i *Instance) getPluginAndVersionByName(pluginName string, versionName string) (Plugin, Version, error) {
@@ -314,8 +380,8 @@ func (i *Instance) getPluginAndVersionByName(pluginName string, versionName stri
 	return Plugin{}, Version{}, errors.New("No plugin with name " + pluginName + " found")
 }
 
-func (i *Instance) downloadAndUnzip(plugin Plugin, downloadUrl string) ([]string, error) {
-	tempDirPath := filepath.Join(i.csgoDir, fmt.Sprintf("temp_%v_%v", plugin.Name, time.Now().UTC()))
+func (i *Instance) downloadAndInstall(pluginName string, pluginInstallDir, downloadUrl string) ([]string, error) {
+	tempDirPath := filepath.Join(i.csgoDir, fmt.Sprintf("temp_%v_%v", pluginName, time.Now().UTC()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
 		return nil, fmt.Errorf("os.Mkdir temp dir: %w", err)
 	}
@@ -325,7 +391,7 @@ func (i *Instance) downloadAndUnzip(plugin Plugin, downloadUrl string) ([]string
 		return nil, fmt.Errorf("download.Download: %w", err)
 	}
 
-	destPath := filepath.Join(i.csgoDir, plugin.InstallDir)
+	destPath := filepath.Join(i.csgoDir, pluginInstallDir)
 
 	unzippedFiles, err := unzipDownload(downloadedFilePath, destPath)
 	if err != nil {
@@ -334,6 +400,14 @@ func (i *Instance) downloadAndUnzip(plugin Plugin, downloadUrl string) ([]string
 
 	if err := os.RemoveAll(tempDirPath); err != nil {
 		return nil, fmt.Errorf("os.RemoveAll temp dir: %w", err)
+	}
+
+	// additional plugin actions
+	if pluginName == "metamod_source" {
+		gaminfoPaht := filepath.Join(i.csgoDir, "gameinfo.gi")
+		if err := metamodInstall(gaminfoPaht); err != nil {
+			return nil, fmt.Errorf("metamodInstall: %w", err)
+		}
 	}
 
 	return unzippedFiles, nil

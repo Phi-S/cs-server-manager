@@ -2,6 +2,8 @@ package plugins_test
 
 import (
 	"cs-server-manager/plugins"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"os"
@@ -10,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestNew(t *testing.T) {
+func TestNew_DefaultPlugins(t *testing.T) {
 	tempDirPath := filepath.Join(os.TempDir(), fmt.Sprintf("temp_test_%v", uuid.New()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
 		t.Fatal("os.Mkdir temp dir", err)
@@ -24,9 +26,87 @@ func TestNew(t *testing.T) {
 
 	pluginsJsonPath := filepath.Join(tempDirPath, "plugins.json")
 	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugins.json")
-	_, err = plugins.New(csGamePath, pluginsJsonPath, installedPluginsJsonPath)
+	pluginsInstance, err := plugins.New(csGamePath, pluginsJsonPath, installedPluginsJsonPath)
 	if err != nil {
 		t.Fatal("plugins.New temp dir", err)
+	}
+
+	metamodFound := false
+	for _, p := range pluginsInstance.GetAllAvailablePlugins() {
+		if p.Name == "metamod_source" {
+			metamodFound = true
+			break
+		}
+	}
+
+	if metamodFound == false {
+		t.Fatal("metamod not found in plugins")
+	}
+
+	if !t.Failed() {
+		defer func() {
+			if err := os.RemoveAll(tempDirPath); err != nil {
+				t.Log("success but failed to cleanup test dir: ", tempDirPath)
+			}
+		}()
+	}
+}
+
+func TestNew_CustomPlugins(t *testing.T) {
+	tempDirPath := filepath.Join(os.TempDir(), fmt.Sprintf("temp_test_%v", uuid.New()))
+	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
+		t.Fatal("os.Mkdir temp dir", err)
+	}
+
+	csGamePath := filepath.Join(tempDirPath, "game/")
+	err := os.MkdirAll(csGamePath, os.ModePerm)
+	if err != nil {
+		t.Fatal("os.MkdirAll temp dir", err)
+	}
+
+	pluginsJsonPath := filepath.Join(tempDirPath, "plugins.json")
+	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugins.json")
+
+	testPluginName := "test-plugin-that-should-exist"
+	pluginsJson := []plugins.Plugin{
+		{
+			Name:        testPluginName,
+			Description: "",
+			URL:         "http://test.test",
+			InstallDir:  "/",
+			Versions: []plugins.Version{
+				{
+					Name:         "v1",
+					DownloadURL:  "http://test.test",
+					Dependencies: nil,
+				},
+			},
+		},
+	}
+	pluginsJsonContent, err := json.MarshalIndent(pluginsJson, "", "    ")
+	if err != nil {
+		t.Fatal("json.MarshalIndent(pluginsJson)", err)
+	}
+
+	if err := os.WriteFile(pluginsJsonPath, pluginsJsonContent, os.ModePerm); err != nil {
+		t.Fatal("os.WriteFile pluginsJsonContent ", err)
+	}
+
+	pluginsInstance, err := plugins.New(csGamePath, pluginsJsonPath, installedPluginsJsonPath)
+	if err != nil {
+		t.Fatal("plugins.New temp dir", err)
+	}
+
+	testPluginFound := false
+	for _, p := range pluginsInstance.GetAllAvailablePlugins() {
+		if p.Name == testPluginName {
+			testPluginFound = true
+			break
+		}
+	}
+
+	if testPluginFound == false {
+		t.Fatal("test plugin not found in plugins ", testPluginName)
 	}
 
 	if !t.Failed() {
@@ -361,7 +441,7 @@ func createGameinfoFile(path string) error {
 	return nil
 }
 
-func TestInstallMetamod(t *testing.T) {
+func TestInstall_Metamod(t *testing.T) {
 	tempDirPath := filepath.Join(os.TempDir(), fmt.Sprintf("temp_test_%v", uuid.New()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
 		t.Fatal("os.Mkdir temp dir", err)
@@ -378,8 +458,8 @@ func TestInstallMetamod(t *testing.T) {
 	}
 
 	pluginsJsonPath := filepath.Join(tempDirPath, "plugins.json")
-	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugins.json")
-	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonPath, installedPluginsJsonPath)
+	installedPluginJsonPath := filepath.Join(tempDirPath, "installed-plugin.json")
+	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonPath, installedPluginJsonPath)
 	if err != nil {
 		t.Fatal("plugins.New temp dir", err)
 	}
@@ -388,16 +468,26 @@ func TestInstallMetamod(t *testing.T) {
 		t.Fatal("InstallPluginByName", err)
 	}
 
-	installedPluginsJson, err := os.ReadFile(installedPluginsJsonPath)
+	installedPluginsJsonContent, err := os.ReadFile(installedPluginJsonPath)
 	if err != nil {
-		t.Fatal("read installed plugins json", err)
+		t.Fatal("os.ReadFile(installedPluginJsonPath) ", err)
 	}
-	shouldBeJson :=
-		`"Name": "metamod_source",
-        "Version": "2.0.0-git1313",
-        "InstalledAtUtc":`
-	if strings.HasPrefix(string(installedPluginsJson), shouldBeJson) {
-		t.Fatal("failed to write valid installedJsonFile.json", "is json:", string(installedPluginsJson), "should be json:", shouldBeJson)
+	installedPluginsJson := string(installedPluginsJsonContent)
+
+	if strings.Contains(installedPluginsJson, `"name": "metamod_source",`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "2.0.0-git1313",`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"installed_at_utc":`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry installedAtUtc")
+	}
+
+	if strings.Contains(installedPluginsJson, `"dependencies": []`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry dependencies")
 	}
 
 	newGameinfoContent, err := os.ReadFile(gameinfoPath)
@@ -407,6 +497,14 @@ func TestInstallMetamod(t *testing.T) {
 
 	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
 		t.Fatal("new gameinfo.gi is missing metamod_install line")
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod.vdf")); err != nil {
+		t.Fatal("metamod.vdf file not found", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod", "bin", "linux64", "metamod.2.blade.so")); err != nil {
+		t.Fatal("metamod.2.blade.so file not found ", err)
 	}
 
 	if !t.Failed() {
@@ -418,7 +516,7 @@ func TestInstallMetamod(t *testing.T) {
 	}
 }
 
-func TestInstance_Uninstall_MetaMod(t *testing.T) {
+func TestUninstall_Metamod(t *testing.T) {
 	tempDirPath := filepath.Join(os.TempDir(), fmt.Sprintf("temp_test_%v", uuid.New()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
 		t.Fatal("os.Mkdir temp dir", err)
@@ -435,7 +533,7 @@ func TestInstance_Uninstall_MetaMod(t *testing.T) {
 	}
 
 	pluginsJsonPath := filepath.Join(tempDirPath, "plugins.json")
-	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugins.json")
+	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugin.json")
 	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonPath, installedPluginsJsonPath)
 	if err != nil {
 		t.Fatal("plugins.New temp dir", err)
@@ -443,31 +541,45 @@ func TestInstance_Uninstall_MetaMod(t *testing.T) {
 
 	if err := pluginsInstance.InstallPluginByName("metamod_source", "2.0.0-git1313"); err != nil {
 		t.Fatal("InstallPluginByName", err)
-	}
-
-	installedPluginsJson, err := os.ReadFile(installedPluginsJsonPath)
-	if err != nil {
-		t.Fatal("read installed plugins json", err)
-	}
-	shouldBeJson :=
-		`"Name": "metamod_source",
-        "Version": "2.0.0-git1313",
-        "InstalledAtUtc":`
-	if strings.HasPrefix(string(installedPluginsJson), shouldBeJson) {
-		t.Fatal("failed to write valid installedJsonFile.json", "is json:", string(installedPluginsJson), "should be json:", shouldBeJson)
-	}
-
-	newGameinfoContent, err := os.ReadFile(gameinfoPath)
-	if err != nil {
-		t.Fatal("failed to validate new gameinfo.gi", err)
-	}
-
-	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
-		t.Fatal("new gameinfo.gi is missing metamod_install line")
 	}
 
 	if err := pluginsInstance.Uninstall("metamod_source"); err != nil {
-		t.Fatal(err)
+		t.Fatal("Uninstall", err)
+	}
+
+	installedPluginsJsonContent, err := os.ReadFile(installedPluginsJsonPath)
+	if err != nil {
+		t.Fatal("os.ReadFile(installedPluginsJsonPath) ", err)
+	}
+	installedPluginsJson := string(installedPluginsJsonContent)
+
+	if strings.Contains(installedPluginsJson, `"name": "metamod_source",`) {
+		t.Fatal("installedPluginsJson still contains metamod entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "2.0.0-git1313",`) {
+		t.Fatal("installedPluginsJson still contains metamod entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"installed_at_utc":`) {
+		t.Fatal("installedPluginsJson still contains metamod entry installedAtUtc")
+	}
+
+	newGameinfoContent, err := os.ReadFile(gameinfoPath)
+	if err != nil {
+		t.Fatal("os.ReadFile(gameinfoPath) ", err)
+	}
+
+	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") {
+		t.Fatal("gameinfo.gi is still containing metamod line")
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod.vdf")); errors.Is(err, os.ErrNotExist) == false {
+		t.Fatal("metamod.vdf file still exists", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod", "bin", "linux64", "metamod.2.blade.so")); errors.Is(err, os.ErrNotExist) == false {
+		t.Fatal("metamod.2.blade.so file still exists ", err)
 	}
 
 	if !t.Failed() {
@@ -479,7 +591,7 @@ func TestInstance_Uninstall_MetaMod(t *testing.T) {
 	}
 }
 
-func TestInstallCounterStrikeSharp(t *testing.T) {
+func TestInstall_CounterStrikeSharp(t *testing.T) {
 	tempDirPath := filepath.Join(os.TempDir(), fmt.Sprintf("temp_test_%v", uuid.New()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
 		t.Fatal("os.Mkdir temp dir", err)
@@ -496,7 +608,7 @@ func TestInstallCounterStrikeSharp(t *testing.T) {
 	}
 
 	pluginsJsonPath := filepath.Join(tempDirPath, "plugins.json")
-	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugins.json")
+	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugin.json")
 	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonPath, installedPluginsJsonPath)
 	if err != nil {
 		t.Fatal("plugins.New temp dir", err)
@@ -506,16 +618,66 @@ func TestInstallCounterStrikeSharp(t *testing.T) {
 		t.Fatal("InstallPluginByName", err)
 	}
 
-	installedPluginsJson, err := os.ReadFile(installedPluginsJsonPath)
+	installedPluginsJsonContent, err := os.ReadFile(installedPluginsJsonPath)
 	if err != nil {
-		t.Fatal("read installed plugins json", err)
+		t.Fatal("os.ReadFile(installedPluginsJsonPath) ", err)
 	}
-	shouldBeJson :=
-		`"Name": "CounterStrikeSharp",
-        "Version": "v255",
-        "InstalledAtUtc":`
-	if strings.HasPrefix(string(installedPluginsJson), shouldBeJson) {
-		t.Fatal("failed to write valid installedJsonFile.json", "is json:", string(installedPluginsJson), "should be json:", shouldBeJson)
+	installedPluginsJson := string(installedPluginsJsonContent)
+
+	if strings.Contains(installedPluginsJson, `"name": "metamod_source",`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "2.0.0-git1313",`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"dependencies": []`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry dependencies")
+	}
+
+	if strings.Contains(installedPluginsJson, `"name": "CounterStrikeSharp",`) == false {
+		t.Fatal("installedPluginsJson dose not contain CounterStrikeSharp entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "v255",`) == false {
+		t.Fatal("installedPluginsJson dose not contain CounterStrikeSharp entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"dependencies": [
+        {
+            "name": "metamod_source",
+            "version": "2.0.0-git1313",`) == false {
+		t.Fatal("installedPluginsJson dose not contain CounterStrikeSharp entry dependencies")
+	}
+
+	newGameinfoContent, err := os.ReadFile(gameinfoPath)
+	if err != nil {
+		t.Fatal("failed to validate new gameinfo.gi", err)
+	}
+
+	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
+		t.Fatal("new gameinfo.gi is missing metamod_install line")
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod.vdf")); err != nil {
+		t.Fatal("metamod.vdf file not found", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod", "bin", "linux64", "metamod.2.blade.so")); err != nil {
+		t.Fatal("metamod.2.blade.so file not found ", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod", "counterstrikesharp.vdf")); err != nil {
+		t.Fatal("counterstrikesharp.vdf file not found ", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "counterstrikesharp", "bin", "linuxsteamrt64", "counterstrikesharp.so")); err != nil {
+		t.Fatal("counterstrikesharp.so file not found ", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "counterstrikesharp", "api", "CounterStrikeSharp.API.dll")); err != nil {
+		t.Fatal("CounterStrikeSharp.API.dll file not found ", err)
 	}
 
 	if !t.Failed() {
@@ -527,7 +689,7 @@ func TestInstallCounterStrikeSharp(t *testing.T) {
 	}
 }
 
-func TestInstallCs2PracticeMode(t *testing.T) {
+func TestInstall_Cs2PracticeMode(t *testing.T) {
 	tempDirPath := filepath.Join(os.TempDir(), fmt.Sprintf("temp_test_%v", uuid.New()))
 	if err := os.Mkdir(tempDirPath, os.ModePerm); err != nil {
 		t.Fatal("os.Mkdir temp dir", err)
@@ -544,7 +706,7 @@ func TestInstallCs2PracticeMode(t *testing.T) {
 	}
 
 	pluginsJsonPath := filepath.Join(tempDirPath, "plugins.json")
-	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugins.json")
+	installedPluginsJsonPath := filepath.Join(tempDirPath, "installed-plugin.json")
 	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonPath, installedPluginsJsonPath)
 	if err != nil {
 		t.Fatal("plugins.New temp dir", err)
@@ -554,16 +716,81 @@ func TestInstallCs2PracticeMode(t *testing.T) {
 		t.Fatal("InstallPluginByName", err)
 	}
 
-	installedPluginsJson, err := os.ReadFile(installedPluginsJsonPath)
+	installedPluginsJsonContent, err := os.ReadFile(installedPluginsJsonPath)
 	if err != nil {
-		t.Fatal("read installed plugins json", err)
+		t.Fatal("os.ReadFile(installedPluginsJsonPath) ", err)
 	}
-	shouldBeJson :=
-		`"Name": "Cs2PracticeMode",
-        "Version": "0.0.14",
-        "InstalledAtUtc":`
-	if strings.HasPrefix(string(installedPluginsJson), shouldBeJson) {
-		t.Fatal("failed to write valid installedJsonFile.json", "is json:", string(installedPluginsJson), "should be json:", shouldBeJson)
+	installedPluginsJson := string(installedPluginsJsonContent)
+
+	if strings.Contains(installedPluginsJson, `"name": "metamod_source",`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "2.0.0-git1313",`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"dependencies": []`) == false {
+		t.Fatal("installedPluginsJson dose not contain metamod entry dependencies")
+	}
+
+	if strings.Contains(installedPluginsJson, `"name": "CounterStrikeSharp",`) == false {
+		t.Fatal("installedPluginsJson dose not contain CounterStrikeSharp entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "v255",`) == false {
+		t.Fatal("installedPluginsJson dose not contain CounterStrikeSharp entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"dependencies": [
+                {
+                    "name": "metamod_source",
+                    "version": "2.0.0-git1313",`) == false {
+		t.Fatal("installedPluginsJson dose not contain CounterStrikeSharp entry dependencies")
+	}
+
+	if strings.Contains(installedPluginsJson, `"name": "Cs2PracticeMode",`) == false {
+		t.Fatal("installedPluginsJson dose not contain Cs2PracticeMode entry")
+	}
+
+	if strings.Contains(installedPluginsJson, `"version": "0.0.14",`) == false {
+		t.Fatal("installedPluginsJson dose not contain Cs2PracticeMode entry version")
+	}
+
+	if strings.Contains(installedPluginsJson, `"dependencies": [
+        {
+            "name": "CounterStrikeSharp",
+            "version": "v255",`) == false {
+		t.Fatal("installedPluginsJson dose not contain Cs2PracticeMode entry dependencies")
+	}
+
+	newGameinfoContent, err := os.ReadFile(gameinfoPath)
+	if err != nil {
+		t.Fatal("failed to validate new gameinfo.gi", err)
+	}
+
+	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
+		t.Fatal("new gameinfo.gi is missing metamod_install line")
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod.vdf")); err != nil {
+		t.Fatal("metamod.vdf file not found", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod", "bin", "linux64", "metamod.2.blade.so")); err != nil {
+		t.Fatal("metamod.2.blade.so file not found ", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "metamod", "counterstrikesharp.vdf")); err != nil {
+		t.Fatal("counterstrikesharp.vdf file not found ", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "counterstrikesharp", "bin", "linuxsteamrt64", "counterstrikesharp.so")); err != nil {
+		t.Fatal("counterstrikesharp.so file not found ", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(csgoDir, "addons", "counterstrikesharp", "plugins", "Cs2PracticeMode", "Cs2PracticeMode.dll")); err != nil {
+		t.Fatal("Cs2PracticeMode.dll file not found ", err)
 	}
 
 	if !t.Failed() {

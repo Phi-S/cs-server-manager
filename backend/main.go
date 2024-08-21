@@ -187,6 +187,7 @@ func startApi(
 
 	v1.Get("/plugins", handlers.GetAvailablePluginsHandler)
 	v1.Post("/plugins/install", handlers.InstallPluginHandler)
+	v1.Post("/plugins/uninstall", handlers.UninstallPluginHandler)
 
 	logGroup := v1.Group("/log", func(c fiber.Ctx) error {
 		c.Locals(constants.UserLogWriterKey, userLogWriter)
