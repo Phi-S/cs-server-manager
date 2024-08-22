@@ -11,6 +11,12 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+type ErrorResponse struct {
+	Status    int    `json:"status"`
+	Message   string `json:"message"`
+	RequestId string `json:"request_id"`
+}
+
 func NewErrorWithInternal(c fiber.Ctx, code int, message string, internalError error) error {
 	c.Locals(constants.InternalErrorKey, internalError)
 	return fiber.NewError(code, message)

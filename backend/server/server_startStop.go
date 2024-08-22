@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"cs-server-manager/event"
+	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"io"
@@ -66,6 +67,10 @@ func (s *Instance) Start(sp StartParameters) error {
 
 	s.running.Store(true)
 	s.onStarting.Trigger()
+
+	if err := gvalidator.Instance().Struct(sp); err != nil {
+		return fmt.Errorf("startParameters validation: %w", err)
+	}
 
 	if err := s.copySteamclient(); err != nil {
 		err = fmt.Errorf("failed to copy steamclient %w", err)

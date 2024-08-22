@@ -3,23 +3,30 @@ package handlers
 import (
 	"cs-server-manager/constants"
 	"cs-server-manager/gvalidator"
-	"cs-server-manager/jfile"
-	"cs-server-manager/server"
+	"cs-server-manager/start_parameters_json"
+	"fmt"
 	"github.com/gofiber/fiber/v3"
 )
 
-type StartParameters struct {
+type SettingsModel struct {
 	Hostname        string `json:"hostname" validate:"required,lte=128"`
 	Password        string `json:"password" validate:"omitempty,alphanum,lte=32"`
 	StartMap        string `json:"start_map" validate:"required,printascii,lte=32"`
-	MaxPlayers      uint8  `json:"max_players" validate:"required,number,lte=64"`
-	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,gt=31,lte=32"`
+	MaxPlayers      uint8  `json:"max_players" validate:"required,number,lte=128"`
+	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,eq=32"`
 }
 
 var loginTokenVisibleCount = 4
 
+// GetSettingsHandler	GetSettings
+// @Summary				Gets the current settings
+// @Tags         		settings
+// @Success     		200  {object}  SettingsModel
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/settings [get]
 func GetSettingsHandler(c fiber.Ctx) error {
-	startParametersJsonFile, err := GetFromLocals[*jfile.Instance[server.StartParameters]](c, constants.StartParametersJsonFileKey)
+	startParametersJsonFile, err := GetFromLocals[*start_parameters_json.Instance](c, constants.StartParametersJsonFileKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
@@ -38,7 +45,7 @@ func GetSettingsHandler(c fiber.Ctx) error {
 		}
 	}
 
-	resp := StartParameters{
+	resp := SettingsModel{
 		Hostname:        sp.Hostname,
 		Password:        sp.Password,
 		StartMap:        sp.StartMap,
@@ -49,13 +56,21 @@ func GetSettingsHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
+// UpdateSettingsHandler	GetSettings
+// @Summary					Gets the current settings
+// @Tags         			settings
+// @Param		 			settings body SettingsModel true "The settings to update"
+// @Success     			200  {object}  SettingsModel
+// @Failure					400  {object}  handlers.ErrorResponse
+// @Failure					500  {object}  handlers.ErrorResponse
+// @Router       			/settings [post]
 func UpdateSettingsHandler(c fiber.Ctx) error {
-	startParametersJsonFile, err := GetFromLocals[*jfile.Instance[server.StartParameters]](c, constants.StartParametersJsonFileKey)
+	startParametersJsonFile, err := GetFromLocals[*start_parameters_json.Instance](c, constants.StartParametersJsonFileKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	sp := new(StartParameters)
+	sp := new(SettingsModel)
 	if err := c.Bind().JSON(sp); err != nil {
 		return NewErrorWithInternal(c, fiber.StatusBadRequest, "request body is not valid", err)
 	}
@@ -64,40 +79,40 @@ func UpdateSettingsHandler(c fiber.Ctx) error {
 		return NewErrorWithInternal(c, fiber.StatusBadRequest, "request body is not valid", err)
 	}
 
-	var localStartParameters server.StartParameters
-	err = startParametersJsonFile.Update(func(currentData *server.StartParameters) {
-		if sp.Hostname != currentData.Hostname {
-			currentData.Hostname = sp.Hostname
-		}
-
-		if sp.Password != currentData.Password {
-			currentData.Password = sp.Password
-		}
-
-		if sp.StartMap != currentData.StartMap {
-			currentData.StartMap = sp.StartMap
-		}
-
-		if sp.MaxPlayers != currentData.MaxPlayers {
-			currentData.MaxPlayers = sp.MaxPlayers
-		}
-
-		if len(sp.SteamLoginToken) == 0 {
-			currentData.SteamLoginToken = ""
-		} else if len(sp.SteamLoginToken) > loginTokenVisibleCount {
-			if len(currentData.SteamLoginToken) == 0 {
-				currentData.SteamLoginToken = sp.SteamLoginToken
-			} else if sp.SteamLoginToken[:loginTokenVisibleCount] != currentData.SteamLoginToken[:loginTokenVisibleCount] {
-				currentData.SteamLoginToken = sp.SteamLoginToken
-			}
-		}
-
-		localStartParameters = *currentData
-	})
-
+	startParameters, err := startParametersJsonFile.Read()
 	if err != nil {
-		return NewInternalServerErrorWithInternal(c, err)
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("startParametersJsonFile.Read(): %w", err))
 	}
 
-	return c.Status(fiber.StatusOK).JSON(localStartParameters)
+	if sp.Hostname != startParameters.Hostname {
+		startParameters.Hostname = sp.Hostname
+	}
+
+	if sp.Password != startParameters.Password {
+		startParameters.Password = sp.Password
+	}
+
+	if sp.StartMap != startParameters.StartMap {
+		startParameters.StartMap = sp.StartMap
+	}
+
+	if sp.MaxPlayers != startParameters.MaxPlayers {
+		startParameters.MaxPlayers = sp.MaxPlayers
+	}
+
+	if len(sp.SteamLoginToken) == 0 {
+		startParameters.SteamLoginToken = ""
+	} else if len(sp.SteamLoginToken) > loginTokenVisibleCount {
+		if len(startParameters.SteamLoginToken) == 0 {
+			startParameters.SteamLoginToken = sp.SteamLoginToken
+		} else if sp.SteamLoginToken[:loginTokenVisibleCount] != startParameters.SteamLoginToken[:loginTokenVisibleCount] {
+			startParameters.SteamLoginToken = sp.SteamLoginToken
+		}
+	}
+
+	if err := startParametersJsonFile.Write(startParameters); err != nil {
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("startParametersJsonFile.Write: %w", err))
+	}
+
+	return c.Status(fiber.StatusOK).JSON(startParameters)
 }

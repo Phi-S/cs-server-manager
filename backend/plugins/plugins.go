@@ -302,7 +302,7 @@ func (i *Instance) installPluginByNameInternal(pluginName string, versionName st
 	}, nil
 }
 
-func (i *Instance) Uninstall(pluginName string) error {
+func (i *Instance) Uninstall() error {
 	if i.running.Load() {
 		return fmt.Errorf("another plugin is currently getting installed/uninstalled")
 	}
@@ -317,7 +317,7 @@ func (i *Instance) Uninstall(pluginName string) error {
 	if err != nil {
 		return fmt.Errorf("GetInstalledPlugin: %w", err)
 	}
-	eventPayload := PluginEventsPayload{Name: pluginName}
+	eventPayload := PluginEventsPayload{Name: installedPlugin.Name, Version: installedPlugin.Version}
 
 	i.onPluginUninstallingEvent.Trigger(eventPayload)
 	if err := i.uninstallInternal(*installedPlugin); err != nil {

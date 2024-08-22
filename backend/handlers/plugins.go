@@ -25,6 +25,13 @@ type PluginVersionDependenciesResponse struct {
 	VersionName string `json:"version_name"`
 }
 
+// GetAvailablePluginsHandler	GetPlugins
+// @Summary				Gets all available plugins
+// @Tags         		plugins
+// @Success     		200  {object}  PluginResponse
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/plugins [get]
 func GetAvailablePluginsHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
@@ -72,6 +79,19 @@ func GetAvailablePluginsHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
+type InstallPluginRequest struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+}
+
+// InstallPluginHandler
+// @Summary				Installs the given plugin or updates to given version
+// @Tags         		plugins
+// @Param		 		plugin body InstallPluginRequest true "The plugin and the version that should be installed"
+// @Success     		200
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/plugins [post]
 func InstallPluginHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
@@ -85,6 +105,7 @@ func InstallPluginHandler(c fiber.Ctx) error {
 
 	lock.Lock()
 	defer lock.Unlock()
+
 	if serverInstance.IsRunning() {
 		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not install plugins while server is running")
 	}
@@ -93,25 +114,34 @@ func InstallPluginHandler(c fiber.Ctx) error {
 		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not install plugins while steamcmd is running")
 	}
 
-	pluginName := c.Query("name")
-	versionName := c.Query("version")
+	var installPluginRequest InstallPluginRequest
+	if err := c.Bind().JSON(installPluginRequest); err != nil {
+		return NewErrorWithMessage(c, fiber.StatusBadRequest, "request is not valid")
+	}
 
 	installedPlugin, err := pluginsInstance.GetInstalledPlugin()
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, fmt.Errorf("GetInstalledPlugin: %w", err))
 	}
 
-	if installedPlugin != nil && installedPlugin.Name == pluginName && installedPlugin.Version == versionName {
+	if installedPlugin != nil && installedPlugin.Name == installPluginRequest.Name && installedPlugin.Version == installPluginRequest.Version {
 		return c.SendStatus(fiber.StatusAlreadyReported)
 	}
 
-	if err := pluginsInstance.InstallPluginByName(pluginName, versionName); err != nil {
+	if err := pluginsInstance.InstallPluginByName(installPluginRequest.Name, installPluginRequest.Version); err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)
 }
 
+// UninstallPluginHandler
+// @Summary				Uninstalls the currently installed plugin
+// @Tags         		plugins
+// @Success     		200
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/plugins [delete]
 func UninstallPluginHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
@@ -133,9 +163,7 @@ func UninstallPluginHandler(c fiber.Ctx) error {
 		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "can not uninstall plugins while steamcmd is running")
 	}
 
-	pluginName := c.Query("name")
-
-	if err := pluginsInstance.Uninstall(pluginName); err != nil {
+	if err := pluginsInstance.Uninstall(); err != nil {
 		return NewInternalServerErrorWithInternal(c, fmt.Errorf("pluginsInstance.Uninstall: %w", err))
 	}
 

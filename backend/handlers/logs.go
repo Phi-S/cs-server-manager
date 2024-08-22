@@ -11,6 +11,14 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// LogsHandler
+// @Summary				Gets logs
+// @Tags         		logs
+// @Param countOrSince path int false "Gets the last x logs or all logs since date" 100
+// @Success     		200  {object}  []logwrt.LogEntry
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/logs/{countOrSince} [get]
 func LogsHandler(c fiber.Ctx) error {
 	logWriter, err := GetFromLocals[*logwrt.LogWriter](c, constants.UserLogWriterKey)
 	if err != nil {

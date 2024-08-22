@@ -4,6 +4,14 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// StopHandler  Stop
+// @Summary 	Stops the server
+// @Description If the server is not running, returns 200 OK
+// @Tags        server
+// @Success     200
+// @Failure     400  {object}  handlers.ErrorResponse
+// @Failure     500  {object}  handlers.ErrorResponse
+// @Router      /stop [post]
 func StopHandler(c fiber.Ctx) error {
 	lock, server, _, err := GetServerSteamcmdInstances(c)
 	if err != nil {

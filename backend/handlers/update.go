@@ -4,6 +4,13 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+// UpdateHandler	Update
+// @Summary				Starts server update
+// @Tags         		update
+// @Success     		200
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/update [post]
 func UpdateHandler(c fiber.Ctx) error {
 	lock, serverInstance, steamcmdInstance, err := GetServerSteamcmdInstances(c)
 	if err != nil {
@@ -28,6 +35,13 @@ func UpdateHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusAccepted)
 }
 
+// CancelUpdateHandler	CancelUpdate
+// @Summary				Cancels the server update
+// @Tags         		update
+// @Success     		200
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/update/cancel [post]
 func CancelUpdateHandler(c fiber.Ctx) error {
 	_, _, steamcmdInstance, err := GetServerSteamcmdInstances(c)
 	if err != nil {

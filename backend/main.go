@@ -5,12 +5,13 @@ import (
 	"cs-server-manager/constants"
 	"cs-server-manager/gvalidator"
 	"cs-server-manager/handlers"
-	"cs-server-manager/jfile"
 	"cs-server-manager/logwrt"
 	"cs-server-manager/plugins"
 	"cs-server-manager/server"
+	"cs-server-manager/start_parameters_json"
 	"cs-server-manager/status"
 	"cs-server-manager/steamcmd"
+	"embed"
 	"errors"
 	"log"
 	"log/slog"
@@ -18,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	_ "cs-server-manager/docs"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -26,6 +28,14 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+//go:embed swagger-ui
+//go:embed docs
+var swaggerDir embed.FS
+
+// @title cs-server-manager API
+// @version 1.0
+// @host localhost:8080
+// @BasePath /api/v1
 func main() {
 	configureLogger()
 
@@ -120,7 +130,7 @@ func startApi(
 	ServerSteamcmdLock *sync.Mutex,
 	serverInstance *server.Instance,
 	steamcmdInstance *steamcmd.Instance,
-	startParametersJsonFile *jfile.Instance[server.StartParameters],
+	startParametersJsonFile *start_parameters_json.Instance,
 	status *status.Status,
 	userLogWriter *logwrt.LogWriter,
 	webSocketServer *WebSocketServer,
@@ -162,7 +172,9 @@ func startApi(
 	app.Use(logMiddleware)
 	app.Use(panicHandler)
 
-	v1 := app.Group("/api/v1", func(c fiber.Ctx) error {
+	api := app.Group("/api")
+
+	v1 := api.Group("/v1", func(c fiber.Ctx) error {
 		c.Locals(constants.ConfigKey, config)
 		c.Locals(constants.ServerSteamcmdLockKey, ServerSteamcmdLock)
 		c.Locals(constants.ServerInstanceKey, serverInstance)
@@ -186,10 +198,10 @@ func startApi(
 	v1.Post("/settings", handlers.UpdateSettingsHandler)
 
 	v1.Get("/plugins", handlers.GetAvailablePluginsHandler)
-	v1.Post("/plugins/install", handlers.InstallPluginHandler)
-	v1.Post("/plugins/uninstall", handlers.UninstallPluginHandler)
+	v1.Post("/plugins", handlers.InstallPluginHandler)
+	v1.Delete("/plugins", handlers.UninstallPluginHandler)
 
-	logGroup := v1.Group("/log", func(c fiber.Ctx) error {
+	logGroup := v1.Group("/logs", func(c fiber.Ctx) error {
 		c.Locals(constants.UserLogWriterKey, userLogWriter)
 		return c.Next()
 	})
@@ -198,7 +210,32 @@ func startApi(
 
 	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 
-	if !config.DisableWebsite {
+	if config.EnableSwagger {
+		swagger := api.Group("swagger")
+
+		swagger.Get("/swagger.json", static.New("docs/swagger.json", static.Config{
+			FS:     swaggerDir,
+			Browse: false,
+		}))
+
+		swaggerUiContent, err := swaggerDir.ReadDir("swagger-ui")
+		if err != nil {
+			log.Fatal("failed to read swagger-ui content: ", err)
+		}
+
+		for _, entry := range swaggerUiContent {
+			swagger.Get("/"+entry.Name(), static.New("swagger-ui/"+entry.Name(), static.Config{
+				FS:     swaggerDir,
+				Browse: false,
+			}))
+		}
+
+		swagger.Get("", func(ctx fiber.Ctx) error {
+			return ctx.Redirect().Status(fiber.StatusPermanentRedirect).To(ctx.BaseURL() + "/api/swagger/index.html")
+		})
+	}
+
+	if config.EnableWebUi {
 		app.Get("/*", static.New("./dist"))
 	}
 

@@ -8,6 +8,22 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
+type CommandRequest struct {
+	Command string `json:"command" validate:"required,lt=128"`
+}
+
+type CommandResponse struct {
+	Output []string `json:"output"`
+}
+
+// SendCommandHandler	SendCommand
+// @Summary				Sends and executes a game server command
+// @Tags         		server
+// @Param		 		command body CommandRequest true "This command will be executed on the game server"
+// @Success     		200  {object}  CommandResponse
+// @Failure				400  {object}  handlers.ErrorResponse
+// @Failure				500  {object}  handlers.ErrorResponse
+// @Router       		/send-command [post]
 func SendCommandHandler(c fiber.Ctx) error {
 
 	serverInstance, err := GetFromLocals[*server.Instance](c, constants.ServerInstanceKey)
@@ -19,19 +35,20 @@ func SendCommandHandler(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "server is not running")
 	}
 
-	command := strings.TrimSpace(c.Query("command"))
-	if command == "" {
+	var commandRequest CommandRequest
+	if err := c.Bind().JSON(commandRequest); err != nil {
+		return NewErrorWithMessage(c, fiber.StatusBadRequest, "request is not valid")
+	}
+	if commandRequest.Command == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "command is empty")
 	}
 
-	out, err := serverInstance.SendCommand(command)
+	out, err := serverInstance.SendCommand(commandRequest.Command)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	resp := struct {
-		Output []string `json:"output"`
-	}{
+	resp := CommandResponse{
 		Output: strings.Split(out, "\n"),
 	}
 

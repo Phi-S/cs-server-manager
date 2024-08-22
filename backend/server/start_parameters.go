@@ -1,12 +1,12 @@
 package server
 
 type StartParameters struct {
-	Hostname        string   `json:"hostname"`
-	Password        string   `json:"password"`
-	StartMap        string   `json:"start_map"`
-	MaxPlayers      uint8    `json:"max_players"`
-	SteamLoginToken string   `json:"steam_login_token"`
-	Additional      []string `json:"additional"`
+	Hostname        string   `json:"hostname" validate:"required,lte=128"`
+	Password        string   `json:"password" validate:"omitempty,alphanum,lte=32"`
+	StartMap        string   `json:"start_map" validate:"required,printascii,lte=32"`
+	MaxPlayers      uint8    `json:"max_players" validate:"required,number,lte=128"`
+	SteamLoginToken string   `json:"steam_login_token" validate:"omitempty,alphanum,eq=32"`
+	Additional      []string `json:"additional" validate:"omitempty,dive"`
 }
 
 func DefaultStartParameters() *StartParameters {

@@ -15,15 +15,16 @@ import (
 )
 
 type Config struct {
-	HttpPort       string
-	CsPort         string
-	DataDir        string
-	LogDir         string
-	ServerDir      string
-	SteamcmdDir    string
-	DisableWebsite bool
-	Ip             string
-	usedEnvIp      bool
+	HttpPort      string
+	CsPort        string
+	DataDir       string
+	LogDir        string
+	ServerDir     string
+	SteamcmdDir   string
+	EnableWebUi   bool
+	EnableSwagger bool
+	Ip            string
+	usedEnvIp     bool
 }
 
 func (c Config) UsedIpFromEnv() bool {
@@ -98,7 +99,6 @@ func GetPublicIp() (string, error) {
 }
 
 func GetConfig() (Config, error) {
-
 	const envFile = ".env"
 	if err := godotenv.Load(envFile); err != nil {
 		slog.Info("no .env file present at", "path", envFile)
@@ -113,7 +113,7 @@ func GetConfig() (Config, error) {
 	slog.Info("config", ipKey, ip)
 
 	const httpPortKey = "HTTP_PORT"
-	httpPort := GetEnvWithDefaultValue(httpPortKey, "port", "80")
+	httpPort := GetEnvWithDefaultValue(httpPortKey, "port", "8080")
 	slog.Info("config", httpPortKey, httpPort)
 
 	const csPortKey = "CS_PORT"
@@ -136,9 +136,13 @@ func GetConfig() (Config, error) {
 	steamcmdDir := GetEnvWithDefaultValue(steamcmdDirKey, "dirpath", filepath.Join(dataDir, "steamcmd"))
 	slog.Info("config", steamcmdDirKey, steamcmdDir)
 
-	const disableWebsiteKey = "DISABLE_WEBSITE"
-	disableWebsite := GetEnvWithDefaultValueBool(disableWebsiteKey, "boolean", false)
-	slog.Info("config", disableWebsiteKey, disableWebsite)
+	const enableWebUiKey = "ENABLE_WEB_UI"
+	enableWebUi := GetEnvWithDefaultValueBool(enableWebUiKey, "boolean", true)
+	slog.Info("config", enableWebUiKey, enableWebUi)
+
+	const enableSwaggerKey = "ENABLE_SWAGGER"
+	enableSwagger := GetEnvWithDefaultValueBool(enableSwaggerKey, "boolean", true)
+	slog.Info("config", enableSwaggerKey, enableSwagger)
 
 	return Config{
 		httpPort,
@@ -147,7 +151,8 @@ func GetConfig() (Config, error) {
 		logDir,
 		serverDir,
 		steamcmdDir,
-		disableWebsite,
+		enableWebUi,
+		enableSwagger,
 		ip,
 		!isDefaultValue,
 	}, nil

@@ -4,10 +4,10 @@ import (
 	"cs-server-manager/config"
 	"cs-server-manager/event"
 	"cs-server-manager/game_events"
-	"cs-server-manager/jfile"
 	"cs-server-manager/logwrt"
 	"cs-server-manager/plugins"
 	"cs-server-manager/server"
+	"cs-server-manager/start_parameters_json"
 	"cs-server-manager/status"
 	"cs-server-manager/steamcmd"
 	"fmt"
@@ -39,7 +39,7 @@ func createdRequiredDirs(cfg config.Config) error {
 func createRequiredServices(cfg config.Config) (
 	*steamcmd.Instance,
 	*server.Instance,
-	*jfile.Instance[server.StartParameters],
+	*start_parameters_json.Instance,
 	*logwrt.LogWriter,
 	*status.Status,
 	*WebSocketServer,
@@ -59,7 +59,7 @@ func createRequiredServices(cfg config.Config) (
 	}
 
 	startParametersJsonPath := filepath.Join(cfg.DataDir, "start-parameters.json")
-	startParametersJsonFile, err := jfile.New[server.StartParameters](startParametersJsonPath, *server.DefaultStartParameters())
+	startParametersJsonFile, err := start_parameters_json.New(startParametersJsonPath, *server.DefaultStartParameters())
 	if err != nil {
 		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create new json file service for start-parameter.json %w", err)
 	}
@@ -111,7 +111,7 @@ func registerEvents(
 	configInstance config.Config,
 	serverInstance *server.Instance,
 	steamcmdInstance *steamcmd.Instance,
-	startParametersJfileInstance *jfile.Instance[server.StartParameters],
+	startParametersJfileInstance *start_parameters_json.Instance,
 	logWriterInstance *logwrt.LogWriter,
 	statusInstance *status.Status,
 	webSocketServerInstance *WebSocketServer,
