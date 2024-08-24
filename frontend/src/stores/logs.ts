@@ -1,5 +1,6 @@
 import {defineStore} from "pinia";
-import {getLogs, LogEntry} from "@/api/server";
+import type {LogEntry} from "@/api/server";
+import {getLogs} from "@/api/server";
 
 export const useLogsStore = defineStore("logs", {
     state: () => {

@@ -14,7 +14,7 @@ export enum State {
     PluginUninstalling = "plugin-uninstalling"
 }
 
-export class Status {
+export interface Status {
     state: State;
     hostname: string;
     player_count: number;
@@ -25,10 +25,10 @@ export class Status {
     password: string;
 }
 
-export class LogEntry {
-    timestamp: string | undefined
-    log_type: string | undefined
-    message: string | undefined
+export interface LogEntry {
+    timestamp: string;
+    log_type: string;
+    message: string;
 }
 
 export function startServer() {

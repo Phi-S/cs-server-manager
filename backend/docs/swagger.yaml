@@ -1,0 +1,418 @@
+basePath: /api/v1
+definitions:
+  handlers.CommandRequest:
+    properties:
+      command:
+        type: string
+    required:
+    - command
+    type: object
+  handlers.CommandResponse:
+    properties:
+      output:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      message:
+        type: string
+      request_id:
+        type: string
+      status:
+        type: integer
+    type: object
+  handlers.InstallPluginRequest:
+    properties:
+      name:
+        type: string
+      version:
+        type: string
+    type: object
+  handlers.PluginResponse:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      url:
+        type: string
+      versions:
+        items:
+          $ref: '#/definitions/handlers.PluginVersionResponse'
+        type: array
+    type: object
+  handlers.PluginVersionDependenciesResponse:
+    properties:
+      plugin_name:
+        type: string
+      version_name:
+        type: string
+    type: object
+  handlers.PluginVersionResponse:
+    properties:
+      dependencies:
+        items:
+          $ref: '#/definitions/handlers.PluginVersionDependenciesResponse'
+        type: array
+      installed:
+        type: boolean
+      name:
+        type: string
+    type: object
+  handlers.SettingsModel:
+    properties:
+      hostname:
+        maxLength: 128
+        type: string
+      max_players:
+        maximum: 128
+        type: integer
+      password:
+        maxLength: 32
+        type: string
+      start_map:
+        maxLength: 32
+        type: string
+      steam_login_token:
+        type: string
+    required:
+    - hostname
+    - max_players
+    - start_map
+    type: object
+  handlers.StartBody:
+    properties:
+      hostname:
+        maxLength: 128
+        type: string
+      max_players:
+        maximum: 128
+        type: integer
+      password:
+        maxLength: 32
+        type: string
+      start_map:
+        maxLength: 32
+        type: string
+      steam_login_token:
+        type: string
+    type: object
+  logwrt.LogEntry:
+    properties:
+      log_type:
+        type: string
+      message:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  status.InternalStatus:
+    properties:
+      hostname:
+        type: string
+      ip:
+        type: string
+      map:
+        type: string
+      max_player_count:
+        type: integer
+      password:
+        type: string
+      player_count:
+        type: integer
+      port:
+        type: string
+      state:
+        $ref: '#/definitions/status.State'
+    type: object
+  status.State:
+    enum:
+    - idle
+    - server-starting
+    - server-started
+    - server-stopping
+    - steamcmd-updating
+    - plugin-installing
+    - plugin-uninstalling
+    type: string
+    x-enum-varnames:
+    - Idle
+    - ServerStarting
+    - ServerStarted
+    - ServerStopping
+    - SteamcmdUpdating
+    - PluginInstalling
+    - PluginUninstalling
+info:
+  contact: {}
+  title: cs-server-manager API
+  version: "1.0"
+paths:
+  /logs/{countOrSince}:
+    get:
+      parameters:
+      - description: Gets the last x logs or all logs since date
+        in: path
+        name: countOrSince
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/logwrt.LogEntry'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Gets logs
+      tags:
+      - logs
+  /plugins:
+    delete:
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Uninstalls the currently installed plugin
+      tags:
+      - plugins
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.PluginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Gets all available plugins
+      tags:
+      - plugins
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: The plugin and the version that should be installed
+        in: body
+        name: plugin
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.InstallPluginRequest'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Installs the given plugin or updates to given version
+      tags:
+      - plugins
+  /send-command:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: This command will be executed on the game server
+        in: body
+        name: command
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CommandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.CommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Sends and executes a game server command
+      tags:
+      - server
+  /settings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SettingsModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Gets the current settings
+      tags:
+      - settings
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: The settings to update
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SettingsModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SettingsModel'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Gets the current settings
+      tags:
+      - settings
+  /start:
+    post:
+      consumes:
+      - application/json
+      description: Starts the server with the given start parameters
+      parameters:
+      - description: You can provide no, all or only a few start parameters. The provided
+          start parameters will overwrite the saved start parameters in the start-parameters.json
+          file.
+        in: body
+        name: startParameters
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.StartBody'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Starts the server
+      tags:
+      - server
+  /status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/status.InternalStatus'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get the current status of the server
+      tags:
+      - server
+  /stop:
+    post:
+      description: If the server is not running, returns 200 OK
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Stops the server
+      tags:
+      - server
+  /update:
+    post:
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Starts server update
+      tags:
+      - update
+  /update/cancel:
+    post:
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Cancels the server update
+      tags:
+      - update
+schemes:
+- http
+- https
+swagger: "2.0"

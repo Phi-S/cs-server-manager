@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Buttons from "@/components/Buttons.vue";
 import Console from "@/components/Console.vue";
-import {connected} from "@/webSocket";
 </script>
 
 <template>

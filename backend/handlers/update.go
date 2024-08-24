@@ -38,7 +38,7 @@ func UpdateHandler(c fiber.Ctx) error {
 // CancelUpdateHandler	CancelUpdate
 // @Summary				Cancels the server update
 // @Tags         		update
-// @Success     		200
+// @Success     		200  {string}  string    "ok"
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/update/cancel [post]

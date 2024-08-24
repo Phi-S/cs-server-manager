@@ -1,5 +1,6 @@
 import {defineStore} from "pinia";
-import {getStatus, State, Status} from "@/api/server";
+import type {Status} from "@/api/server"
+import {State} from "@/api/server";
 
 export const useStatusStore = defineStore("status", {
     state: (): Status => {
@@ -33,8 +34,8 @@ export const useStatusStore = defineStore("status", {
     },
     actions: {
         async init() {
-            const newStatus = await getStatus()
-            this.update(newStatus)
+            //const newStatus = await getStatus()
+            //this.update(newStatus)
         },
         update(status: Status) {
             this.state = status.state;

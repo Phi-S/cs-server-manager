@@ -30,11 +30,12 @@ import (
 
 //go:embed swagger-ui
 //go:embed docs
+//go:embed web
 var swaggerDir embed.FS
 
 // @title cs-server-manager API
 // @version 1.0
-// @host localhost:8080
+// @schemes http https
 // @BasePath /api/v1
 func main() {
 	configureLogger()
@@ -235,6 +236,7 @@ func startApi(
 		})
 	}
 
+	// TODO: embed web ui / dist
 	if config.EnableWebUi {
 		app.Get("/*", static.New("./dist"))
 	}

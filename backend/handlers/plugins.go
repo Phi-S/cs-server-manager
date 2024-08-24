@@ -28,6 +28,7 @@ type PluginVersionDependenciesResponse struct {
 // GetAvailablePluginsHandler	GetPlugins
 // @Summary				Gets all available plugins
 // @Tags         		plugins
+// @Produce      		json
 // @Success     		200  {object}  PluginResponse
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
@@ -88,6 +89,7 @@ type InstallPluginRequest struct {
 // @Summary				Installs the given plugin or updates to given version
 // @Tags         		plugins
 // @Param		 		plugin body InstallPluginRequest true "The plugin and the version that should be installed"
+// @Accept       		json
 // @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse

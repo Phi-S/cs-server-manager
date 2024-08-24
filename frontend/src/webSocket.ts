@@ -1,24 +1,35 @@
 import {ref} from 'vue';
-import {LogEntry, Status} from "@/api/server";
-import {ConnectToWebSocket, WebSocketMessage} from "@/api/api";
+import type {LogEntry, Status} from "@/api/server";
 import {useStatusStore} from "@/stores/status";
 import {useLogsStore} from "@/stores/logs";
 
 export var connected = ref<boolean>(false)
 
-export async function ConnectToWebsocket() {
+let WEBSOCKET_URL: string
+
+interface WebSocketMessage {
+    type: string
+    message: any
+}
+
+export function ConnectToWebsocket(webSocketUrl: string) {
+    WEBSOCKET_URL = webSocketUrl
     connected.value = false
-    while (connected.value == false) {
-        try {
-            await initStatusAndLogs()
-            SetupWebSocket()
-            connected.value = true
-            console.log("setup finished")
-            break
-        } catch (error) {
-            console.log(error)
-            await new Promise(r => setTimeout(r, 2000));
-        }
+    setInterval(reconnectBackgroundTask, 2000)
+}
+
+async function reconnectBackgroundTask() {
+    if (connected.value) {
+        return
+    }
+
+    try {
+        await initStatusAndLogs()
+        SetupWebSocket(WEBSOCKET_URL)
+        console.info("websocket connected established")
+        connected.value = true
+    } catch (error) {
+        console.error(error)
     }
 }
 
@@ -29,19 +40,19 @@ async function initStatusAndLogs() {
     await logsStore.init()
 }
 
-function SetupWebSocket() {
-    const socket = ConnectToWebSocket();
+function SetupWebSocket(webSocketUrl: string) {
+    const socket = new WebSocket(webSocketUrl)
 
     socket.onerror = async (event) => {
         socket.close()
-        console.info(`websocket closed with error ${event}. Trying to reconnect`)
-        ConnectToWebsocket()
+        console.error(`websocket closed with error ${event}. Trying to reconnect`)
+        connected.value = false
     }
 
     socket.onclose = (event) => {
         socket.close()
-        console.info(`websocket closed ${event}. Trying to reconnect`)
-        ConnectToWebsocket()
+        console.error(`websocket closed ${event}. Trying to reconnect`)
+        connected.value = false
     }
 
     socket.onmessage = (event) => {

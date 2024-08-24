@@ -21,6 +21,7 @@ var loginTokenVisibleCount = 4
 // GetSettingsHandler	GetSettings
 // @Summary				Gets the current settings
 // @Tags         		settings
+// @Produce      		json
 // @Success     		200  {object}  SettingsModel
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
@@ -59,6 +60,8 @@ func GetSettingsHandler(c fiber.Ctx) error {
 // UpdateSettingsHandler	GetSettings
 // @Summary					Gets the current settings
 // @Tags         			settings
+// @Accept       			json
+// @Produce      			json
 // @Param		 			settings body SettingsModel true "The settings to update"
 // @Success     			200  {object}  SettingsModel
 // @Failure					400  {object}  handlers.ErrorResponse

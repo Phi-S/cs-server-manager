@@ -11,9 +11,9 @@ FROM golang:1.22 AS go-builder
 WORKDIR /app
 COPY backend/. ./
 
-RUN go mod download
-RUN go mod verify
 RUN go mod tidy
+RUN go mod verify
+RUN go mod download
 RUN go build -v -o cs-server-manager
 
 ## building debian with dependencies for cs server and steamcmd

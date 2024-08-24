@@ -36,7 +36,7 @@ func logMiddleware(c fiber.Ctx) error {
 			"ip", c.IP(),
 			"port", c.Port(),
 			"status", c.Response().StatusCode(),
-			"duration", duration,
+			"duration-ms", float64(duration.Nanoseconds())/1e6,
 		)
 	} else {
 		slog.Error("request finished with error",
@@ -47,7 +47,7 @@ func logMiddleware(c fiber.Ctx) error {
 			"ip", c.IP(),
 			"port", c.Port(),
 			"status", statusCode,
-			"duration", duration,
+			"duration-ms", float64(duration.Nanoseconds())/1e6,
 			"response-message", responseMessage,
 			"internal-error", internalError,
 			"error", err,

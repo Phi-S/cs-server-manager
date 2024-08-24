@@ -19,6 +19,8 @@ type CommandResponse struct {
 // SendCommandHandler	SendCommand
 // @Summary				Sends and executes a game server command
 // @Tags         		server
+// @Accept       		json
+// @Produce 			json
 // @Param		 		command body CommandRequest true "This command will be executed on the game server"
 // @Success     		200  {object}  CommandResponse
 // @Failure				400  {object}  handlers.ErrorResponse

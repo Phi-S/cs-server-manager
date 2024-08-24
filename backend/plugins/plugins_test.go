@@ -543,7 +543,7 @@ func TestUninstall_Metamod(t *testing.T) {
 		t.Fatal("InstallPluginByName", err)
 	}
 
-	if err := pluginsInstance.Uninstall("metamod_source"); err != nil {
+	if err := pluginsInstance.Uninstall(); err != nil {
 		t.Fatal("Uninstall", err)
 	}
 

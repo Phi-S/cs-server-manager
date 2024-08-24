@@ -1,8 +1,4 @@
-export function openInNewTab(url) {
-    window.open(url, '_blank').focus();
-}
-
-export function navigateTo(url) {
+export function navigateTo(url: string) {
     window.location.href = url;
 }
 

@@ -14,6 +14,7 @@ import (
 // LogsHandler
 // @Summary				Gets logs
 // @Tags         		logs
+// @Produce     		json
 // @Param countOrSince path int false "Gets the last x logs or all logs since date" 100
 // @Success     		200  {object}  []logwrt.LogEntry
 // @Failure				400  {object}  handlers.ErrorResponse

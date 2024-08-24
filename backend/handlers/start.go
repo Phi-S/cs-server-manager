@@ -23,6 +23,7 @@ type StartBody struct {
 // @Summary      Starts the server
 // @Description	 Starts the server with the given start parameters
 // @Tags         server
+// @Accept       json
 // @Param 		 startParameters body StartBody true "You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file."
 // @Success      200
 // @Failure      400  {object}  handlers.ErrorResponse
