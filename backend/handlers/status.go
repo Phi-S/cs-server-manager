@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// StatusHandler Status
+// StatusHandler
 // @Summary      Get the current status of the server
 // @Tags         server
 // @Produce      json

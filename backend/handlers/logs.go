@@ -4,50 +4,39 @@ import (
 	"cs-server-manager/constants"
 	"cs-server-manager/logwrt"
 	"fmt"
+	"github.com/gofiber/fiber/v3"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/gofiber/fiber/v3"
 )
 
 // LogsHandler
-// @Summary				Gets logs
+// @Summary				Get logs
 // @Tags         		logs
 // @Produce     		json
-// @Param countOrSince path int false "Gets the last x logs or all logs since date" 100
-// @Success     		200  {object}  []logwrt.LogEntry
-// @Failure				400  {object}  handlers.ErrorResponse
-// @Failure				500  {object}  handlers.ErrorResponse
-// @Router       		/logs/{countOrSince} [get]
+// @Param 				count	path		 int true "Get the last X logs"
+// @Success     		200  	{object}	[]logwrt.LogEntry
+// @Failure				400  	{object}	handlers.ErrorResponse
+// @Failure				500  	{object}	handlers.ErrorResponse
+// @Router       		/logs/{count} [get]
 func LogsHandler(c fiber.Ctx) error {
 	logWriter, err := GetFromLocals[*logwrt.LogWriter](c, constants.UserLogWriterKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
 	}
 
-	countOrSince := strings.TrimSpace(c.Params("countOrSince"))
-	if countOrSince == "" {
-		return fiber.NewError(fiber.StatusBadGateway, "expected parameter is empty")
+	countString := strings.TrimSpace(c.Params("count"))
+	if countString == "" {
+		return fiber.NewError(fiber.StatusBadGateway, "count parameter is required")
 	}
 
-	count, countErr := strconv.ParseInt(countOrSince, 10, 64)
-	since, sinceErr := time.Parse(time.RFC3339Nano, countOrSince)
-	if countErr != nil && sinceErr != nil {
-		return fiber.NewError(fiber.StatusBadGateway, "expected parameter can only be a number of timestamp")
+	count, err := strconv.ParseInt(countString, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("count parameter is not a valid number. %v", err))
 	}
 
-	var result []logwrt.LogEntry
-	if countErr == nil {
-		result, err = logWriter.GetLogs(int(count))
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to get logs. %v", err))
-		}
-	} else {
-		result, err = logWriter.GetLogsSince(since)
-		if err != nil {
-			return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to get logs. %v", err))
-		}
+	result, err := logWriter.GetLogs(int(count))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, fmt.Sprintf("failed to get logs. %v", err))
 	}
 
 	return c.Status(fiber.StatusOK).JSON(result)

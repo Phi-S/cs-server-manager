@@ -16,8 +16,8 @@ type CommandResponse struct {
 	Output []string `json:"output"`
 }
 
-// SendCommandHandler	SendCommand
-// @Summary				Sends and executes a game server command
+// SendCommandHandler
+// @Summary				Send game-server command
 // @Tags         		server
 // @Accept       		json
 // @Produce 			json

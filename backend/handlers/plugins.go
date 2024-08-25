@@ -25,15 +25,15 @@ type PluginVersionDependenciesResponse struct {
 	VersionName string `json:"version_name"`
 }
 
-// GetAvailablePluginsHandler	GetPlugins
-// @Summary				Gets all available plugins
+// GetPluginsHandler
+// @Summary				Get all available plugins
 // @Tags         		plugins
 // @Produce      		json
 // @Success     		200  {object}  PluginResponse
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/plugins [get]
-func GetAvailablePluginsHandler(c fiber.Ctx) error {
+func GetPluginsHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
@@ -86,9 +86,9 @@ type InstallPluginRequest struct {
 }
 
 // InstallPluginHandler
-// @Summary				Installs the given plugin or updates to given version
+// @Summary				Install given plugin
 // @Tags         		plugins
-// @Param		 		plugin body InstallPluginRequest true "The plugin and the version that should be installed"
+// @Param		 		plugin body InstallPluginRequest true "The plugin and version that should be installed"
 // @Accept       		json
 // @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse
@@ -138,7 +138,7 @@ func InstallPluginHandler(c fiber.Ctx) error {
 }
 
 // UninstallPluginHandler
-// @Summary				Uninstalls the currently installed plugin
+// @Summary				Uninstall the currently installed plugin
 // @Tags         		plugins
 // @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse

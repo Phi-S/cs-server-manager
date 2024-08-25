@@ -150,12 +150,13 @@ info:
   title: cs-server-manager API
   version: "1.0"
 paths:
-  /logs/{countOrSince}:
+  /logs/{count}:
     get:
       parameters:
-      - description: Gets the last x logs or all logs since date
+      - description: Get the last X logs
         in: path
-        name: countOrSince
+        name: count
+        required: true
         type: integer
       produces:
       - application/json
@@ -174,7 +175,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Gets logs
+      summary: Get logs
       tags:
       - logs
   /plugins:
@@ -190,7 +191,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Uninstalls the currently installed plugin
+      summary: Uninstall the currently installed plugin
       tags:
       - plugins
     get:
@@ -209,14 +210,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Gets all available plugins
+      summary: Get all available plugins
       tags:
       - plugins
     post:
       consumes:
       - application/json
       parameters:
-      - description: The plugin and the version that should be installed
+      - description: The plugin and version that should be installed
         in: body
         name: plugin
         required: true
@@ -233,7 +234,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Installs the given plugin or updates to given version
+      summary: Install given plugin
       tags:
       - plugins
   /send-command:
@@ -262,7 +263,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Sends and executes a game server command
+      summary: Send game-server command
       tags:
       - server
   /settings:
@@ -282,14 +283,14 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Gets the current settings
+      summary: Get the current settings
       tags:
       - settings
     post:
       consumes:
       - application/json
       parameters:
-      - description: The settings to update
+      - description: The updated settings
         in: body
         name: settings
         required: true
@@ -310,7 +311,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Gets the current settings
+      summary: Update settings
       tags:
       - settings
   /start:
@@ -321,7 +322,7 @@ paths:
       parameters:
       - description: You can provide no, all or only a few start parameters. The provided
           start parameters will overwrite the saved start parameters in the start-parameters.json
-          file.
+          file if the server started successfully.
         in: body
         name: startParameters
         required: true
@@ -338,7 +339,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Starts the server
+      summary: Start the server
       tags:
       - server
   /status:
@@ -363,7 +364,7 @@ paths:
       - server
   /stop:
     post:
-      description: If the server is not running, returns 200 OK
+      description: Stops the server of if the server is not running, returns 200 OK
       responses:
         "200":
           description: OK
@@ -375,7 +376,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Stops the server
+      summary: Stop the server
       tags:
       - server
   /update:
@@ -391,16 +392,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Starts server update
+      summary: Start server update
       tags:
       - update
   /update/cancel:
     post:
+      description: Cancel the currently running server update or if no update is currently
+        running, returns 200 OK
       responses:
         "200":
-          description: ok
-          schema:
-            type: string
+          description: OK
         "400":
           description: Bad Request
           schema:
@@ -409,7 +410,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
-      summary: Cancels the server update
+      summary: Cancel the server update
       tags:
       - update
 schemes:

@@ -1,7 +1,7 @@
 import {Get, handleErrorResponse, handleErrorResponseWithMessage, Post, PostWithoutResponse} from "@/api/api";
 
-export class SendCommandResponse {
-    output: string[] | undefined
+export interface SendCommandResponse {
+    output: string[]
 }
 
 export enum State {
@@ -67,7 +67,7 @@ export async function getStatus(): Promise<Status> {
 }
 
 export async function getLogs(count: number): Promise<LogEntry[]> {
-    const resp = await Get<LogEntry[]>(`/log/${count}`)
+    const resp = await Get<LogEntry[]>(`/logs/${count}`)
     handleErrorResponse("Failed to get server logs", resp)
     return resp as LogEntry[]
 }

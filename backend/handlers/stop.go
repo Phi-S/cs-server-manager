@@ -4,9 +4,9 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// StopHandler  Stop
-// @Summary 	Stops the server
-// @Description If the server is not running, returns 200 OK
+// StopHandler
+// @Summary 	Stop the server
+// @Description Stops the server of if the server is not running, returns 200 OK
 // @Tags        server
 // @Success     200
 // @Failure     400  {object}  handlers.ErrorResponse

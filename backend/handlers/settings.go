@@ -18,8 +18,8 @@ type SettingsModel struct {
 
 var loginTokenVisibleCount = 4
 
-// GetSettingsHandler	GetSettings
-// @Summary				Gets the current settings
+// GetSettingsHandler
+// @Summary				Get the current settings
 // @Tags         		settings
 // @Produce      		json
 // @Success     		200  {object}  SettingsModel
@@ -57,12 +57,12 @@ func GetSettingsHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
-// UpdateSettingsHandler	GetSettings
-// @Summary					Gets the current settings
+// UpdateSettingsHandler
+// @Summary					Update settings
 // @Tags         			settings
 // @Accept       			json
 // @Produce      			json
-// @Param		 			settings body SettingsModel true "The settings to update"
+// @Param		 			settings body SettingsModel true "The updated settings"
 // @Success     			200  {object}  SettingsModel
 // @Failure					400  {object}  handlers.ErrorResponse
 // @Failure					500  {object}  handlers.ErrorResponse

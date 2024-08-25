@@ -1,17 +1,3 @@
----
-title: cs-server-manager API v1.0
-language_tabs:
-  - http: HTTP
-language_clients:
-  - http: ""
-toc_footers: []
-includes: []
-search: true
-highlight_theme: darkula
-headingLevel: 2
-
----
-
 <!-- Generator: Widdershins v4.0.1 -->
 
 <h1 id="cs-server-manager-api">cs-server-manager API v1.0</h1>
@@ -24,26 +10,15 @@ Base URLs:
 
 <h1 id="cs-server-manager-api-logs">logs</h1>
 
-## get__logs_{countOrSince}
+## Get logs
 
-> Code samples
+`GET /logs/{count}`
 
-```http
-GET /api/v1/logs/{countOrSince} HTTP/1.1
-
-Accept: application/json
-
-```
-
-`GET /logs/{countOrSince}`
-
-*Gets logs*
-
-<h3 id="get__logs_{countorsince}-parameters">Parameters</h3>
+<h3 id="get-logs-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|countOrSince|path|integer|true|Gets the last x logs or all logs since date|
+|count|path|integer|true|Get the last X logs|
 
 > Example responses
 
@@ -59,7 +34,7 @@ Accept: application/json
 ]
 ```
 
-<h3 id="get__logs_{countorsince}-responses">Responses</h3>
+<h3 id="get-logs-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -67,7 +42,7 @@ Accept: application/json
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 
-<h3 id="get__logs_{countorsince}-responseschema">Response Schema</h3>
+<h3 id="get-logs-responseschema">Response Schema</h3>
 
 Status Code **200**
 
@@ -84,20 +59,9 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-plugins">plugins</h1>
 
-## get__plugins
-
-> Code samples
-
-```http
-GET /api/v1/plugins HTTP/1.1
-
-Accept: application/json
-
-```
+## Get all available plugins
 
 `GET /plugins`
-
-*Gets all available plugins*
 
 > Example responses
 
@@ -123,7 +87,7 @@ Accept: application/json
 }
 ```
 
-<h3 id="get__plugins-responses">Responses</h3>
+<h3 id="get-all-available-plugins-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -135,21 +99,9 @@ Accept: application/json
 This operation does not require authentication
 </aside>
 
-## post__plugins
-
-> Code samples
-
-```http
-POST /api/v1/plugins HTTP/1.1
-
-Content-Type: application/json
-Accept: */*
-
-```
+## Install given plugin
 
 `POST /plugins`
-
-*Installs the given plugin or updates to given version*
 
 > Body parameter
 
@@ -160,11 +112,11 @@ Accept: */*
 }
 ```
 
-<h3 id="post__plugins-parameters">Parameters</h3>
+<h3 id="install-given-plugin-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[handlers.InstallPluginRequest](#schemahandlers.installpluginrequest)|true|The plugin and the version that should be installed|
+|body|body|[handlers.InstallPluginRequest](#schemahandlers.installpluginrequest)|true|The plugin and version that should be installed|
 |» name|body|string|false|none|
 |» version|body|string|false|none|
 
@@ -172,7 +124,7 @@ Accept: */*
 
 > 400 Response
 
-<h3 id="post__plugins-responses">Responses</h3>
+<h3 id="install-given-plugin-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -184,26 +136,15 @@ Accept: */*
 This operation does not require authentication
 </aside>
 
-## delete__plugins
-
-> Code samples
-
-```http
-DELETE /api/v1/plugins HTTP/1.1
-
-Accept: */*
-
-```
+## Uninstall the currently installed plugin
 
 `DELETE /plugins`
-
-*Uninstalls the currently installed plugin*
 
 > Example responses
 
 > 400 Response
 
-<h3 id="delete__plugins-responses">Responses</h3>
+<h3 id="uninstall-the-currently-installed-plugin-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -217,21 +158,9 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-server">server</h1>
 
-## post__send-command
-
-> Code samples
-
-```http
-POST /api/v1/send-command HTTP/1.1
-
-Content-Type: application/json
-Accept: application/json
-
-```
+## Send game-server command
 
 `POST /send-command`
-
-*Sends and executes a game server command*
 
 > Body parameter
 
@@ -241,7 +170,7 @@ Accept: application/json
 }
 ```
 
-<h3 id="post__send-command-parameters">Parameters</h3>
+<h3 id="send-game-server-command-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -260,7 +189,7 @@ Accept: application/json
 }
 ```
 
-<h3 id="post__send-command-responses">Responses</h3>
+<h3 id="send-game-server-command-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -272,21 +201,9 @@ Accept: application/json
 This operation does not require authentication
 </aside>
 
-## post__start
-
-> Code samples
-
-```http
-POST /api/v1/start HTTP/1.1
-
-Content-Type: application/json
-Accept: */*
-
-```
+## Start the server
 
 `POST /start`
-
-*Starts the server*
 
 Starts the server with the given start parameters
 
@@ -302,11 +219,11 @@ Starts the server with the given start parameters
 }
 ```
 
-<h3 id="post__start-parameters">Parameters</h3>
+<h3 id="start-the-server-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[handlers.StartBody](#schemahandlers.startbody)|true|You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file.|
+|body|body|[handlers.StartBody](#schemahandlers.startbody)|true|You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.|
 |» hostname|body|string|false|none|
 |» max_players|body|integer|false|none|
 |» password|body|string|false|none|
@@ -317,7 +234,7 @@ Starts the server with the given start parameters
 
 > 400 Response
 
-<h3 id="post__start-responses">Responses</h3>
+<h3 id="start-the-server-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -329,20 +246,9 @@ Starts the server with the given start parameters
 This operation does not require authentication
 </aside>
 
-## get__status
-
-> Code samples
-
-```http
-GET /api/v1/status HTTP/1.1
-
-Accept: application/json
-
-```
+## Get the current status of the server
 
 `GET /status`
-
-*Get the current status of the server*
 
 > Example responses
 
@@ -361,7 +267,7 @@ Accept: application/json
 }
 ```
 
-<h3 id="get__status-responses">Responses</h3>
+<h3 id="get-the-current-status-of-the-server-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -373,28 +279,17 @@ Accept: application/json
 This operation does not require authentication
 </aside>
 
-## post__stop
-
-> Code samples
-
-```http
-POST /api/v1/stop HTTP/1.1
-
-Accept: */*
-
-```
+## Stop the server
 
 `POST /stop`
 
-*Stops the server*
-
-If the server is not running, returns 200 OK
+Stops the server of if the server is not running, returns 200 OK
 
 > Example responses
 
 > 400 Response
 
-<h3 id="post__stop-responses">Responses</h3>
+<h3 id="stop-the-server-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -408,20 +303,9 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-settings">settings</h1>
 
-## get__settings
-
-> Code samples
-
-```http
-GET /api/v1/settings HTTP/1.1
-
-Accept: application/json
-
-```
+## Get the current settings
 
 `GET /settings`
-
-*Gets the current settings*
 
 > Example responses
 
@@ -437,7 +321,7 @@ Accept: application/json
 }
 ```
 
-<h3 id="get__settings-responses">Responses</h3>
+<h3 id="get-the-current-settings-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -449,21 +333,9 @@ Accept: application/json
 This operation does not require authentication
 </aside>
 
-## post__settings
-
-> Code samples
-
-```http
-POST /api/v1/settings HTTP/1.1
-
-Content-Type: application/json
-Accept: application/json
-
-```
+## Update settings
 
 `POST /settings`
-
-*Gets the current settings*
 
 > Body parameter
 
@@ -477,11 +349,11 @@ Accept: application/json
 }
 ```
 
-<h3 id="post__settings-parameters">Parameters</h3>
+<h3 id="update-settings-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[handlers.SettingsModel](#schemahandlers.settingsmodel)|true|The settings to update|
+|body|body|[handlers.SettingsModel](#schemahandlers.settingsmodel)|true|The updated settings|
 |» hostname|body|string|true|none|
 |» max_players|body|integer|true|none|
 |» password|body|string|false|none|
@@ -502,7 +374,7 @@ Accept: application/json
 }
 ```
 
-<h3 id="post__settings-responses">Responses</h3>
+<h3 id="update-settings-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -516,26 +388,15 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-update">update</h1>
 
-## post__update
-
-> Code samples
-
-```http
-POST /api/v1/update HTTP/1.1
-
-Accept: */*
-
-```
+## Start server update
 
 `POST /update`
-
-*Starts server update*
 
 > Example responses
 
 > 400 Response
 
-<h3 id="post__update-responses">Responses</h3>
+<h3 id="start-server-update-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -547,30 +408,21 @@ Accept: */*
 This operation does not require authentication
 </aside>
 
-## post__update_cancel
-
-> Code samples
-
-```http
-POST /api/v1/update/cancel HTTP/1.1
-
-Accept: */*
-
-```
+## Cancel the server update
 
 `POST /update/cancel`
 
-*Cancels the server update*
+Cancel the currently running server update or if no update is currently running, returns 200 OK
 
 > Example responses
 
-> 200 Response
+> 400 Response
 
-<h3 id="post__update_cancel-responses">Responses</h3>
+<h3 id="cancel-the-server-update-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|ok|string|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|None|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 

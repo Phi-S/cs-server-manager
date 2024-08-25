@@ -4,6 +4,13 @@
 
 # [API documentation](api-documentation.md)
 
+> All API endpoint should be prefixed with /api/v1/.
+> 
+> Example:
+>```
+> http://localhost:8080/api/v1/logs/100
+>``` 
+
 # Commands
 
 > All commands should be run from the root of this repo
@@ -14,9 +21,7 @@
 npm install --prefix frontend/
 npm run build --prefix frontend/
 
-cp frontend/dist backend/web
-
-swag init --dir backend/ --output backend/docs
+cp -R frontend/dist backend/web
 
 go mod tidy -C backend/
 go mod verify -C backend/
@@ -42,7 +47,7 @@ swag init --dir backend/ --output backend/docs
 
 ```
 npm install widdershins@v4.0.0
-npx widdershins --expandBody true --language_tabs 'http:HTTP' -o api-documentation.md backend/docs/swagger.json
+npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentation.md backend/docs/swagger.json
 ```
 
 # Environment variables

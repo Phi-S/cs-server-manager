@@ -13,9 +13,11 @@ import (
 	"cs-server-manager/steamcmd"
 	"embed"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -31,7 +33,7 @@ import (
 //go:embed swagger-ui
 //go:embed docs
 //go:embed web
-var swaggerDir embed.FS
+var dir embed.FS
 
 // @title cs-server-manager API
 // @version 1.0
@@ -198,7 +200,7 @@ func startApi(
 	v1.Get("/settings", handlers.GetSettingsHandler)
 	v1.Post("/settings", handlers.UpdateSettingsHandler)
 
-	v1.Get("/plugins", handlers.GetAvailablePluginsHandler)
+	v1.Get("/plugins", handlers.GetPluginsHandler)
 	v1.Post("/plugins", handlers.InstallPluginHandler)
 	v1.Delete("/plugins", handlers.UninstallPluginHandler)
 
@@ -207,7 +209,7 @@ func startApi(
 		return c.Next()
 	})
 
-	logGroup.Get("/:countOrSince", handlers.LogsHandler)
+	logGroup.Get("/:count", handlers.LogsHandler)
 
 	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 
@@ -215,31 +217,50 @@ func startApi(
 		swagger := api.Group("swagger")
 
 		swagger.Get("/swagger.json", static.New("docs/swagger.json", static.Config{
-			FS:     swaggerDir,
+			FS:     dir,
 			Browse: false,
 		}))
 
-		swaggerUiContent, err := swaggerDir.ReadDir("swagger-ui")
-		if err != nil {
-			log.Fatal("failed to read swagger-ui content: ", err)
+		if err := mapDir(swagger, "", dir, "swagger-ui"); err != nil {
+			log.Fatal("failed to map swagger-ui dir", err)
 		}
-
-		for _, entry := range swaggerUiContent {
-			swagger.Get("/"+entry.Name(), static.New("swagger-ui/"+entry.Name(), static.Config{
-				FS:     swaggerDir,
-				Browse: false,
-			}))
-		}
-
-		swagger.Get("", func(ctx fiber.Ctx) error {
-			return ctx.Redirect().Status(fiber.StatusPermanentRedirect).To(ctx.BaseURL() + "/api/swagger/index.html")
-		})
 	}
 
-	// TODO: embed web ui / dist
 	if config.EnableWebUi {
-		app.Get("/*", static.New("./dist"))
+		if err := mapDir(app, "", dir, "web"); err != nil {
+			log.Fatal("failed to map web dir: ", err)
+		}
 	}
 
 	log.Fatal(app.Listen(":" + config.HttpPort))
+}
+
+func mapDir(router fiber.Router, path string, fs embed.FS, dir string) error {
+	router.Get("", static.New(fmt.Sprintf("%v/index.html", dir), static.Config{
+		FS:     fs,
+		Browse: false,
+	}))
+
+	content, err := fs.ReadDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to read folder content: %w", err)
+	}
+
+	for _, entry := range content {
+		epath := fmt.Sprintf("%v/%v", path, entry.Name())
+		efPath := filepath.Join(dir, entry.Name())
+		if entry.IsDir() {
+			err := mapDir(router, epath, fs, efPath)
+			if err != nil {
+				return fmt.Errorf("failed to map sub dir '%v': %w", entry, err)
+			}
+		} else {
+			router.Get(epath, static.New(efPath, static.Config{
+				FS:     fs,
+				Browse: true,
+			}))
+		}
+	}
+
+	return nil
 }

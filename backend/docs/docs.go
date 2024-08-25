@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/logs/{countOrSince}": {
+        "/logs/{count}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -23,13 +23,14 @@ const docTemplate = `{
                 "tags": [
                     "logs"
                 ],
-                "summary": "Gets logs",
+                "summary": "Get logs",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Gets the last x logs or all logs since date",
-                        "name": "countOrSince",
-                        "in": "path"
+                        "description": "Get the last X logs",
+                        "name": "count",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -65,7 +66,7 @@ const docTemplate = `{
                 "tags": [
                     "plugins"
                 ],
-                "summary": "Gets all available plugins",
+                "summary": "Get all available plugins",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -94,10 +95,10 @@ const docTemplate = `{
                 "tags": [
                     "plugins"
                 ],
-                "summary": "Installs the given plugin or updates to given version",
+                "summary": "Install given plugin",
                 "parameters": [
                     {
-                        "description": "The plugin and the version that should be installed",
+                        "description": "The plugin and version that should be installed",
                         "name": "plugin",
                         "in": "body",
                         "required": true,
@@ -128,7 +129,7 @@ const docTemplate = `{
                 "tags": [
                     "plugins"
                 ],
-                "summary": "Uninstalls the currently installed plugin",
+                "summary": "Uninstall the currently installed plugin",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -159,7 +160,7 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
-                "summary": "Sends and executes a game server command",
+                "summary": "Send game-server command",
                 "parameters": [
                     {
                         "description": "This command will be executed on the game server",
@@ -201,7 +202,7 @@ const docTemplate = `{
                 "tags": [
                     "settings"
                 ],
-                "summary": "Gets the current settings",
+                "summary": "Get the current settings",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -233,10 +234,10 @@ const docTemplate = `{
                 "tags": [
                     "settings"
                 ],
-                "summary": "Gets the current settings",
+                "summary": "Update settings",
                 "parameters": [
                     {
-                        "description": "The settings to update",
+                        "description": "The updated settings",
                         "name": "settings",
                         "in": "body",
                         "required": true,
@@ -276,10 +277,10 @@ const docTemplate = `{
                 "tags": [
                     "server"
                 ],
-                "summary": "Starts the server",
+                "summary": "Start the server",
                 "parameters": [
                     {
-                        "description": "You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file.",
+                        "description": "You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.",
                         "name": "startParameters",
                         "in": "body",
                         "required": true,
@@ -340,11 +341,11 @@ const docTemplate = `{
         },
         "/stop": {
             "post": {
-                "description": "If the server is not running, returns 200 OK",
+                "description": "Stops the server of if the server is not running, returns 200 OK",
                 "tags": [
                     "server"
                 ],
-                "summary": "Stops the server",
+                "summary": "Stop the server",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -369,7 +370,7 @@ const docTemplate = `{
                 "tags": [
                     "update"
                 ],
-                "summary": "Starts server update",
+                "summary": "Start server update",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -391,16 +392,14 @@ const docTemplate = `{
         },
         "/update/cancel": {
             "post": {
+                "description": "Cancel the currently running server update or if no update is currently running, returns 200 OK",
                 "tags": [
                     "update"
                 ],
-                "summary": "Cancels the server update",
+                "summary": "Cancel the server update",
                 "responses": {
                     "200": {
-                        "description": "ok",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "OK"
                     },
                     "400": {
                         "description": "Bad Request",

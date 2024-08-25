@@ -19,12 +19,12 @@ type StartBody struct {
 	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,eq=32"`
 }
 
-// StartHandler  Start
-// @Summary      Starts the server
+// StartHandler
+// @Summary      Start the server
 // @Description	 Starts the server with the given start parameters
 // @Tags         server
 // @Accept       json
-// @Param 		 startParameters body StartBody true "You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file."
+// @Param 		 startParameters body StartBody true "You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully."
 // @Success      200
 // @Failure      400  {object}  handlers.ErrorResponse
 // @Failure      500  {object}  handlers.ErrorResponse

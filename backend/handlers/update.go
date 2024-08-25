@@ -4,8 +4,8 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// UpdateHandler	Update
-// @Summary				Starts server update
+// UpdateHandler
+// @Summary				Start server update
 // @Tags         		update
 // @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse
@@ -36,9 +36,10 @@ func UpdateHandler(c fiber.Ctx) error {
 }
 
 // CancelUpdateHandler	CancelUpdate
-// @Summary				Cancels the server update
+// @Summary				Cancel the server update
+// @Description 		Cancel the currently running server update or if no update is currently running, returns 200 OK
 // @Tags         		update
-// @Success     		200  {string}  string    "ok"
+// @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/update/cancel [post]

@@ -1,6 +1,6 @@
 import {defineStore} from "pinia";
 import type {Status} from "@/api/server"
-import {State} from "@/api/server";
+import {getStatus, State} from "@/api/server";
 
 export const useStatusStore = defineStore("status", {
     state: (): Status => {
@@ -26,7 +26,7 @@ export const useStatusStore = defineStore("status", {
         },
         getConnectionString(state: Status) {
             let connectString = `connect ${state.ip}:${state.port}`;
-            if (state.password !== undefined && state.password !== "") {
+            if (state.password !== "") {
                 connectString = `${connectString}; password ${state.password}`;
             }
             return connectString
@@ -34,8 +34,8 @@ export const useStatusStore = defineStore("status", {
     },
     actions: {
         async init() {
-            //const newStatus = await getStatus()
-            //this.update(newStatus)
+            const newStatus = await getStatus()
+            this.update(newStatus)
         },
         update(status: Status) {
             this.state = status.state;
