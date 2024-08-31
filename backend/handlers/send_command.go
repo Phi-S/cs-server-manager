@@ -27,7 +27,6 @@ type CommandResponse struct {
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/send-command [post]
 func SendCommandHandler(c fiber.Ctx) error {
-
 	serverInstance, err := GetFromLocals[*server.Instance](c, constants.ServerInstanceKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
@@ -38,8 +37,8 @@ func SendCommandHandler(c fiber.Ctx) error {
 	}
 
 	var commandRequest CommandRequest
-	if err := c.Bind().JSON(commandRequest); err != nil {
-		return NewErrorWithMessage(c, fiber.StatusBadRequest, "request is not valid")
+	if err := c.Bind().JSON(&commandRequest); err != nil {
+		return NewErrorWithInternal(c, fiber.StatusBadRequest, "request is not valid", err)
 	}
 	if commandRequest.Command == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "command is empty")

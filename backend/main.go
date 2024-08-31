@@ -192,7 +192,7 @@ func startApi(
 
 	v1.Post("/start", handlers.StartHandler)
 	v1.Post("/stop", handlers.StopHandler)
-	v1.Post("/send-command", handlers.SendCommandHandler)
+	v1.Post("/command", handlers.SendCommandHandler)
 
 	v1.Post("/update", handlers.UpdateHandler)
 	v1.Post("/update/cancel", handlers.CancelUpdateHandler)

@@ -223,7 +223,7 @@ Starts the server with the given start parameters
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
-|body|body|[handlers.StartBody](#schemahandlers.startbody)|true|You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.|
+|body|body|[handlers.StartBody](#schemahandlers.startbody)|false|You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.|
 |» hostname|body|string|false|none|
 |» max_players|body|integer|false|none|
 |» password|body|string|false|none|

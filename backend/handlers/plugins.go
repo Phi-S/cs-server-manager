@@ -117,8 +117,8 @@ func InstallPluginHandler(c fiber.Ctx) error {
 	}
 
 	var installPluginRequest InstallPluginRequest
-	if err := c.Bind().JSON(installPluginRequest); err != nil {
-		return NewErrorWithMessage(c, fiber.StatusBadRequest, "request is not valid")
+	if err := c.Bind().JSON(&installPluginRequest); err != nil {
+		return NewErrorWithInternal(c, fiber.StatusBadRequest, "request is not valid", err)
 	}
 
 	installedPlugin, err := pluginsInstance.GetInstalledPlugin()

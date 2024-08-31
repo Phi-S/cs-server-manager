@@ -13,7 +13,7 @@ import (
 // @Summary				Get logs
 // @Tags         		logs
 // @Produce     		json
-// @Param 				count	path		 int true "Get the last X logs"
+// @Param 				count	path		int true "Get the last X logs"
 // @Success     		200  	{object}	[]logwrt.LogEntry
 // @Failure				400  	{object}	handlers.ErrorResponse
 // @Failure				500  	{object}	handlers.ErrorResponse

@@ -283,7 +283,6 @@ const docTemplate = `{
                         "description": "You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.",
                         "name": "startParameters",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/handlers.StartBody"
                         }
