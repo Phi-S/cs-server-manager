@@ -5,11 +5,12 @@
 # [API documentation](api-documentation.md)
 
 > All API endpoint should be prefixed with /api/v1/.
-> 
+>
 > Example:
->```
+>
+> ```
 > http://localhost:8080/api/v1/logs/100
->``` 
+> ```
 
 # Commands
 
@@ -52,8 +53,12 @@ npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentati
 
 # Environment variables
 
+When starting the application the following environment variables can be set.
+
+> The environment variables can also be set via an `.env` file that should be located in the same folder as the `cs-server-manager` binary
+
 | KEY            | TYPE   | DEFAULT           | DESCRIPTION                                                                                                                    |
-|----------------|--------|-------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| -------------- | ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | IP             | string | current public IP | The IP that gets reported with the status endpoint to generate the connection url.<br/>If no specified, die public ip is used. |
 | HTTP_PORT      | string | 8080              | The port on witch the API server is bound to                                                                                   |
 | CS_PORT        | string | 27015             | The Port that the CS server will use. This port will be reported with the status endpoint to generate the connection URL       |
@@ -63,4 +68,3 @@ npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentati
 | STEAMCMD_DIR   | string | DATA_DIR/steamcmd | The directory in witch steamcmd will be installed                                                                              |
 | ENABLE_WEB_UI  | bool   | true              | If set to true, the API will host the WEB UI                                                                                   |
 | ENABLE_SWAGGER | bool   | true              | If set to true, the API will host the swagger UI                                                                               |
-
