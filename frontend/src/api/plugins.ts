@@ -1,35 +1,34 @@
-import {Get, handleErrorResponse, PostWithoutResponse} from "@/api/api";
+import { DeleteWithoutResponse, Get, PostJsonWithoutResponse } from "./api";
 
 export interface PluginResp {
-    name: string
-    description: string
-    url: string
-    versions: Version[]
+  name: string;
+  description: string;
+  url: string;
+  versions: Version[];
 }
 
 export interface Version {
-    name: string
-    installed: boolean
-    dependencies: Dependency[]
+  name: string;
+  installed: boolean;
+  dependencies: Dependency[];
 }
 
 export interface Dependency {
-    plugin_name: string
-    version_name: string
+  plugin_name: string;
+  version_name: string;
 }
 
 export async function getPlugins(): Promise<PluginResp[]> {
-    const resp = await Get<PluginResp[]>("/plugins")
-    handleErrorResponse("Failed to get plugins", resp)
-    return resp as PluginResp[]
+  return await Get<PluginResp[]>("/plugins");
 }
 
 export async function installPlugin(name: string, version: string) {
-    const resp = await PostWithoutResponse(`/plugins/install?name=${name}&version=${version}`)
-    handleErrorResponse("Failed to install plugin", resp)
+  return await PostJsonWithoutResponse("/plugins", {
+    name: name,
+    version: version,
+  });
 }
 
-export async function uninstallPlugin(name: string) {
-    const resp = await PostWithoutResponse(`/plugins/uninstall?name=${name}`)
-    handleErrorResponse("Failed to uninstall plugin", resp)
+export async function uninstallPlugin() {
+  return await DeleteWithoutResponse(`/plugins`);
 }
