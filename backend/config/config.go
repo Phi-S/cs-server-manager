@@ -2,12 +2,14 @@ package config
 
 import (
 	"cs-server-manager/gvalidator"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -31,53 +33,41 @@ func (c Config) UsedIpFromEnv() bool {
 	return c.usedEnvIp
 }
 
-func GetEnvWithDefaultValueBool(key string, validationString string, defaultValue bool) bool {
-	defaultValueStr := strconv.FormatBool(defaultValue)
-	value := GetEnvWithDefaultValue(key, validationString, defaultValueStr)
+var errEnvNotFound = errors.New("environment variable not found or empty")
 
-	if value == defaultValueStr {
-		return defaultValue
+func getEnv(key string, validationString string) (string, error) {
+	v, ok := os.LookupEnv(key)
+	v = strings.TrimSpace(v)
+
+	if !ok || v == "" {
+		return "", errEnvNotFound
 	}
 
-	valueBool, err := strconv.ParseBool(value)
+	if err := gvalidator.Instance().Var(v, validationString); err != nil {
+		return "", fmt.Errorf("environment variable with the key '%v' and the value '%v' failed to validate with validation string '%v': %w", key, v, validationString, err)
+	}
+
+	return v, nil
+}
+
+func getEnvWithDefaultValueIfEmptyAndIsDefaultIndicator(key string, validationString string, defaultValue string) (value string, isDefaultValue bool, err error) {
+	v, err := getEnv(key, validationString)
 	if err != nil {
-		slog.Warn("failed to parse value from env as bool", "value", value)
-		return defaultValue
+		if errors.Is(err, errEnvNotFound) {
+			return defaultValue, true, nil
+		}
+		return "", false, fmt.Errorf("validation of environment variable '%v' failed: %w", key, err)
 	}
 
-	return valueBool
+	return v, false, nil
 }
 
-func GetEnvWithDefaultValue(key string, validationString string, defaultValue string) string {
-	value, ok := os.LookupEnv(key)
-	value = strings.TrimSpace(value)
-
-	if !ok || value == "" {
-		return defaultValue
+func getEnvWithDefaultValueIfEmpty(key string, validationString string, defaultValue string) (string, error) {
+	v, _, err := getEnvWithDefaultValueIfEmptyAndIsDefaultIndicator(key, validationString, defaultValue)
+	if err != nil {
+		return "", err
 	}
-
-	if err := gvalidator.Instance().Var(value, validationString); err != nil {
-		slog.Warn("validation failed. Returning default value", "validation_string", validationString, "env_key", key, "default_value", defaultValue)
-		return defaultValue
-	}
-
-	return value
-}
-
-func GetEnvWithDefaultValue2(key string, validationString string, defaultValue string) (value string, isDefaultValue bool) {
-	value, ok := os.LookupEnv(key)
-	value = strings.TrimSpace(value)
-
-	if !ok || value == "" {
-		return defaultValue, true
-	}
-
-	if err := gvalidator.Instance().Var(value, validationString); err != nil {
-		slog.Warn("validation failed. Returning default value", "validation_string", validationString, "env_key", key, "default_value", defaultValue)
-		return defaultValue, true
-	}
-
-	return value, false
+	return v, nil
 }
 
 func GetPublicIp() (string, error) {
@@ -104,47 +94,109 @@ func GetConfig() (Config, error) {
 		slog.Info("no .env file present at", "path", envFile)
 	}
 
+	// IP
 	const ipKey = "IP"
 	publicIp, err := GetPublicIp()
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to get public ip: %w", err)
 	}
-	ip, isDefaultValue := GetEnvWithDefaultValue2(ipKey, "ip4_addr", publicIp)
-	slog.Info("config", ipKey, ip)
+	ip, ipIsDefaultValue, err := getEnvWithDefaultValueIfEmptyAndIsDefaultIndicator(ipKey, "ip4_addr", publicIp)
+	if err != nil {
+		return Config{}, err
+	}
 
+	// HTTP_PORT
 	const httpPortKey = "HTTP_PORT"
-	httpPort := GetEnvWithDefaultValue(httpPortKey, "port", "8080")
-	slog.Info("config", httpPortKey, httpPort)
+	httpPort, err := getEnvWithDefaultValueIfEmpty(httpPortKey, "port", "8080")
+	if err != nil {
+		return Config{}, err
+	}
 
+	// CS_PORT
 	const csPortKey = "CS_PORT"
-	csPort := GetEnvWithDefaultValue(csPortKey, "port", "27015")
-	slog.Info("config", csPortKey, csPort)
+	csPort, err := getEnvWithDefaultValueIfEmpty(csPortKey, "port", "27015")
+	if err != nil {
+		return Config{}, err
+	}
 
+	// DATA_DIR
 	const dataDirKey = "DATA_DIR"
-	dataDir := GetEnvWithDefaultValue(dataDirKey, "dirpath", "/data")
-	slog.Info("config", dataDirKey, dataDir)
+	dataDir, err := getEnvWithDefaultValueIfEmpty(dataDirKey, "dirpath", "/data")
+	if err != nil {
+		return Config{}, err
+	}
 
+	dataDirAbs, err := filepath.Abs(dataDir)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to convert '%v' with value '%v' to absolute path: %w", dataDirKey, dataDir, err)
+	}
+	dataDir = dataDirAbs
+
+	// LOG_DIR
 	const logDirKey = "LOG_DIR"
-	logDir := GetEnvWithDefaultValue(logDirKey, "dirpath", filepath.Join(dataDir, "logs"))
-	slog.Info("config", logDirKey, logDir)
+	logDir, err := getEnvWithDefaultValueIfEmpty(logDirKey, "dirpath", filepath.Join(dataDir, "logs"))
+	if err != nil {
+		return Config{}, err
+	}
 
+	logDirAbs, err := filepath.Abs(logDir)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to convert '%v' with value '%v' to absolute path: %w", logDirKey, logDir, err)
+	}
+	logDir = logDirAbs
+
+	// SERVER_DIR
 	const serverDirKey = "SERVER_DIR"
-	serverDir := GetEnvWithDefaultValue(serverDirKey, "dirpath", filepath.Join(dataDir, "server"))
-	slog.Info("config", serverDirKey, serverDir)
+	serverDir, err := getEnvWithDefaultValueIfEmpty(serverDirKey, "dirpath", filepath.Join(dataDir, "server"))
+	if err != nil {
+		return Config{}, err
+	}
 
+	serverDirAbs, err := filepath.Abs(serverDir)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to convert '%v' with value '%v' to absolute path: %w", serverDirKey, serverDir, err)
+	}
+	serverDir = serverDirAbs
+
+	// STEAMCMD_DIR
 	const steamcmdDirKey = "STEAMCMD_DIR"
-	steamcmdDir := GetEnvWithDefaultValue(steamcmdDirKey, "dirpath", filepath.Join(dataDir, "steamcmd"))
-	slog.Info("config", steamcmdDirKey, steamcmdDir)
+	steamcmdDir, err := getEnvWithDefaultValueIfEmpty(steamcmdDirKey, "dirpath", filepath.Join(dataDir, "steamcmd"))
+	if err != nil {
+		return Config{}, err
+	}
 
+	steamcmdDirAbs, err := filepath.Abs(steamcmdDir)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to convert '%v' with value '%v' to absolute path: %w", steamcmdDirKey, steamcmdDir, err)
+	}
+	steamcmdDir = steamcmdDirAbs
+
+	// ENABLE_WEB_UI
 	const enableWebUiKey = "ENABLE_WEB_UI"
-	enableWebUi := GetEnvWithDefaultValueBool(enableWebUiKey, "boolean", true)
-	slog.Info("config", enableWebUiKey, enableWebUi)
+	enableWebUiStr, err := getEnvWithDefaultValueIfEmpty(enableWebUiKey, "boolean", "true")
+	if err != nil {
+		return Config{}, err
+	}
 
+	enableWebUi, err := strconv.ParseBool(enableWebUiStr)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to parse environment variable '%v' with value '%v' to bool: %w", enableWebUiKey, enableWebUiStr, err)
+	}
+
+	// ENABLE_SWAGGER
 	const enableSwaggerKey = "ENABLE_SWAGGER"
-	enableSwagger := GetEnvWithDefaultValueBool(enableSwaggerKey, "boolean", true)
-	slog.Info("config", enableSwaggerKey, enableSwagger)
+	enableSwaggerStr, err := getEnvWithDefaultValueIfEmpty(enableSwaggerKey, "boolean", "true")
+	if err != nil {
+		return Config{}, err
+	}
 
-	return Config{
+	enableSwagger, err := strconv.ParseBool(enableSwaggerStr)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to parse environment variable '%v' with value '%v' to bool: %w", enableSwaggerKey, enableSwaggerStr, err)
+	}
+
+	//
+	cfg := Config{
 		httpPort,
 		csPort,
 		dataDir,
@@ -154,6 +206,18 @@ func GetConfig() (Config, error) {
 		enableWebUi,
 		enableSwagger,
 		ip,
-		!isDefaultValue,
-	}, nil
+		!ipIsDefaultValue,
+	}
+
+	// Print
+	v := reflect.ValueOf(cfg)
+	for i := 0; i < v.NumField(); i++ {
+		if !v.Type().Field(i).IsExported() {
+			continue
+		}
+
+		slog.Info("config", v.Type().Field(i).Name, v.Field(i).Interface())
+	}
+
+	return cfg, nil
 }

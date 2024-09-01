@@ -14,23 +14,24 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func createdRequiredDirs(cfg config.Config) error {
 	if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create data dir %v %w", cfg.DataDir, err)
+		return fmt.Errorf("failed to create data dir '%v' %w", cfg.DataDir, err)
 	}
 
 	if err := os.MkdirAll(cfg.ServerDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create server dir %v %w", cfg.ServerDir, err)
+		return fmt.Errorf("failed to create server dir '%v' %w", cfg.ServerDir, err)
 	}
 
 	if err := os.MkdirAll(cfg.SteamcmdDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create steamcmd dir %v %w", cfg.SteamcmdDir, err)
+		return fmt.Errorf("failed to create steamcmd dir '%v' %w", cfg.SteamcmdDir, err)
 	}
 
 	if err := os.MkdirAll(cfg.LogDir, os.ModePerm); err != nil {
-		return fmt.Errorf("failed to create log dir %v %w", cfg.LogDir, err)
+		return fmt.Errorf("failed to create log dir '%v' %w", cfg.LogDir, err)
 	}
 
 	return nil
@@ -90,8 +91,11 @@ func createRequiredServices(cfg config.Config) (
 
 	pluginsJsonFilePath := filepath.Join(cfg.DataDir, "plugins.json")
 	installedPluginsJsonPath := filepath.Join(cfg.DataDir, "installed-plugin.json")
-	csgoDirPath := filepath.Join(cfg.ServerDir, "game", "csgo")
-	pluginsInstance, err := plugins.New(csgoDirPath, pluginsJsonFilePath, installedPluginsJsonPath)
+	csgoDir := filepath.Join(cfg.ServerDir, "game", "csgo")
+	if !strings.HasSuffix(csgoDir, string(filepath.Separator)) {
+		csgoDir = csgoDir + string(filepath.Separator)
+	}
+	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonFilePath, installedPluginsJsonPath)
 	if err != nil {
 		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create plugins instance %w", err)
 	}
