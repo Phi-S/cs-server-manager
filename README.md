@@ -1,8 +1,8 @@
 # cs-server-manager
 
-## :warning: This project is under active development.<br/>:warning: Expect Bugs and breaking changes
+## :warning: This project is under active development.<br/>:warning: Expect bugs and breaking changes
 
-## :warning: This project is designed to only run on linux (for now)<br/>For development under Windows, WSL can be used
+## :warning: This project is designed to only run on linux (for now)<br/>For development under Windows use WSL
 
 <br/>
 
