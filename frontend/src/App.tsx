@@ -76,12 +76,9 @@ export default function App() {
 
   return (
     <div
-      className="m-auto p-3"
+      className="m-auto p-3 vh-100 vw-100 overflow-hidden"
       style={{
-        height: "100vh",
-        width: "100vw",
         maxWidth: "1200px",
-        maxHeight: "100vh",
       }}
     >
       <AlertContextWrapper>

@@ -22,7 +22,7 @@ func Download(url string, destDir string) (FilePath string, error error) {
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			slog.Warn("resp.Body.Close: finished successfully but failed to close body after download %w", err)
+			slog.Warn("resp.Body.Close: finished successfully but failed to close body after download %w", "error", err)
 		}
 	}()
 
@@ -33,7 +33,7 @@ func Download(url string, destDir string) (FilePath string, error error) {
 	defer func() {
 		err := out.Close()
 		if err != nil {
-			slog.Warn("out.Close: finished successfully but failed to close output file after download %w", err)
+			slog.Warn("out.Close: finished successfully but failed to close output file after download %w", "error", err)
 		}
 	}()
 

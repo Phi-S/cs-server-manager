@@ -1,7 +1,7 @@
-import {createContext, useEffect, useState} from "react";
-import {getLogs, getStatus, LogEntry, State, Status} from "../api/server";
+import { createContext, useEffect, useState } from "react";
+import { getLogs, getStatus, LogEntry, State, Status } from "../api/server";
 import Loading from "../components/Loading";
-import {ChildrenProps} from "../misc";
+import { ChildrenProps } from "../misc";
 
 export const WebSocketContext = createContext<
   WebSocketContextValue | undefined
@@ -12,7 +12,7 @@ export interface WebSocketContextValue {
   logs: LogEntry[];
 }
 
-export default function WebSocketContextWrapper({children}: ChildrenProps) {
+export default function WebSocketContextWrapper({ children }: ChildrenProps) {
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState<Status>({
     state: State.Idle,
@@ -26,31 +26,36 @@ export default function WebSocketContextWrapper({children}: ChildrenProps) {
   });
 
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const abortController = new AbortController();
-
     getStatus()
       .then((value) => {
         setStatus(value);
       })
-      .catch(() => abortController.abort());
+      .catch(() => {
+        setError("Connection to server lost");
+      });
 
     getLogs(500)
       .then((value) => {
         setLogs(value);
       })
-      .catch(() => abortController.abort());
+      .catch(() => {
+        setError("Connection to server lost");
+      });
 
     const socket = new WebSocket(GetWebSocketUrl());
     socket.onopen = () => {
       console.info("websocket connection established");
+      setError(undefined);
       setConnected(true);
     };
 
     socket.onclose = () => {
       socket.close();
       console.info(`websocket closed`);
+      setError("Connection to server lost");
       setConnected(false);
     };
 
@@ -77,18 +82,47 @@ export default function WebSocketContextWrapper({children}: ChildrenProps) {
     };
 
     return () => {
-      abortController.abort();
+      socket.onopen = () => {};
+      socket.onmessage = () => {};
+      socket.onclose = () => {};
       socket.close();
+      setError(undefined);
+      setConnected(false);
     };
   }, []);
 
-  if (!connected || status === undefined || logs === undefined) {
-    return <Loading/>;
+  if (error !== undefined && error !== "") {
+    (async () => {
+      await new Promise((f) => setTimeout(f, 5000));
+      if (error !== undefined && error !== "") {
+        window.location.reload();
+      }
+    })();
+    return (
+      <>
+        <div className="flex flex-column text-center align-content-center w-100">
+          <h1>{error}</h1>
+          <h2>Trying to reconnect...</h2>
+          <button
+            className="btn btn-primary align-self-center fs-2"
+            onClick={() => {
+              window.location.reload();
+            }}
+          >
+            Reload
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  if (connected === false || status === undefined || logs === undefined) {
+    return <Loading />;
   }
 
   return (
     <>
-      <WebSocketContext.Provider value={{status, logs}}>
+      <WebSocketContext.Provider value={{ status, logs }}>
         {children}
       </WebSocketContext.Provider>
     </>

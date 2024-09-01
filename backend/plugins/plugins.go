@@ -74,7 +74,7 @@ var (
 )
 
 func New(csgoDir string, pluginsJsonFilePath string, installedPluginJsonPath string) (*Instance, error) {
-	if err := gvalidator.Instance().Var(csgoDir, "required,dir"); err != nil {
+	if err := gvalidator.Instance().Var(csgoDir, "required,dirpath"); err != nil {
 		return nil, fmt.Errorf("csgoDir '%v' is not valid %w", csgoDir, err)
 	}
 
@@ -172,7 +172,7 @@ func (i *Instance) writeInstalledPluginsJsonFile(plugin *InstalledPlugin) error 
 		if err := os.Remove(i.installedPluginJsonFilePath); err != nil {
 			return fmt.Errorf("remove old installedPluginJsonFile: %w", err)
 		}
-	} else if errors.Is(err, os.ErrNotExist) == false {
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("os.Stats: %w", err)
 	}
 
@@ -274,7 +274,7 @@ func (i *Instance) installPluginByNameInternal(pluginName string, versionName st
 		return InstalledPlugin{}, fmt.Errorf("GetInstalledPlugin: %w", err)
 	}
 
-	if isDependency == false && installedPlugins != nil {
+	if !isDependency && installedPlugins != nil {
 		return InstalledPlugin{}, fmt.Errorf("another plugin is already installed '%v'", installedPlugins)
 	}
 

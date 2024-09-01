@@ -3,4 +3,6 @@
 .idea
 dist
 node_modules
+
 cs-server-manager
+backend/web/
