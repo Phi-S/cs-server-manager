@@ -3,6 +3,7 @@
 .idea
 dist
 node_modules
+data/
 
 cs-server-manager
 backend/web/

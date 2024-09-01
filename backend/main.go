@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	_ "cs-server-manager/docs"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -31,7 +30,6 @@ import (
 )
 
 //go:embed swagger-ui
-//go:embed docs
 //go:embed web
 var dir embed.FS
 
@@ -216,10 +214,9 @@ func startApi(
 	if config.EnableSwagger {
 		swagger := api.Group("swagger")
 
-		swagger.Get("/swagger.json", static.New("docs/swagger.json", static.Config{
-			FS:     dir,
-			Browse: false,
-		}))
+		swagger.Get("", func(c fiber.Ctx) error {
+			return c.Redirect().Status(fiber.StatusPermanentRedirect).To("/api/swagger/index.html")
+		})
 
 		if err := mapDir(swagger, "", dir, "swagger-ui"); err != nil {
 			log.Fatal("failed to map swagger-ui dir", err)

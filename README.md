@@ -38,15 +38,14 @@ The Web UI is hosted by default under the base path
 npm install --prefix frontend/
 npm run build --prefix frontend/
 
-cp -R frontend/dist backend/web
+cp -R frontend/dist/* backend/web
 
-swag init --dir backend/ --output backend/docs
-cp backend/docs/swagger.json backend/swagger-ui/swagger.json
+swag init --dir backend -o . -ot json
+cp swagger-ui/* backend/swagger-ui
+cp swagger.json backend/swagger-ui/swagger.json
 
-go mod tidy -C backend/
-go mod verify -C backend/
 go mod download -C backend/
-go build -C backend/ -v -o cs-server-manager
+go build -C backend/ -v -o ../cs-server-manager
 ```
 
 ## Docker
@@ -60,7 +59,7 @@ docker run -it --rm --name cs-server-manager --mount type=bind,source=/cs-server
 
 ```
 go install github.com/swaggo/swag/cmd/swag@v1.16.3
-swag init --dir backend/ --output backend/docs
+swag init --dir backend -o . -ot json
 ```
 
 ## Generate api-documentation.md with [widdershins](https://github.com/Mermade/widdershins)

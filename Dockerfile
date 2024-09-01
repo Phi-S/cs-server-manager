@@ -15,18 +15,16 @@ RUN export GOPATH=$HOME/go
 RUN go install github.com/swaggo/swag/cmd/swag@v1.16.3
 
 COPY backend .
-
-RUN $GOPATH/bin/swag init
-RUN cp docs/swagger.json swagger-ui/swagger.json
-
+COPY swagger-ui swagger-ui
 COPY --from=webui-builder /app/dist web
 
-RUN go mod tidy
-RUN go mod verify
+RUN $GOPATH/bin/swag init -o . -ot json
+RUN cp swagger.json swagger-ui/swagger.json
+
 RUN go mod download
 RUN go build -v -o cs-server-manager
 
-## building debian with dependencies for cs server and steamcmd
+## building debian with dependencies
 FROM debian:12.6-slim
 RUN set -x \
 	&& apt-get update \

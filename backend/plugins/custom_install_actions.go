@@ -34,7 +34,7 @@ func metamodInstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to read gameinfo.gi '%v' %w", gameinfoPath, err)
 	}
 
-	if lineAdded == false {
+	if !lineAdded {
 		return fmt.Errorf("failed to add required line to gaminfo.gi")
 	}
 
@@ -66,7 +66,7 @@ func metamodInstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to validate new gameinfo.gi %w", err)
 	}
 
-	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
+	if !strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") {
 		return fmt.Errorf("new gameinfo.gi is missing metamod_install line")
 	}
 
@@ -99,7 +99,7 @@ func metamodUninstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to read gameinfo.gi '%v' %w", gameinfoPath, err)
 	}
 
-	if lineRemove == false {
+	if !lineRemove {
 		return fmt.Errorf("failed to remove metamod line from gaminfo.gi")
 	}
 
@@ -131,7 +131,7 @@ func metamodUninstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to validate new gameinfo.gi %w", err)
 	}
 
-	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == true {
+	if !strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") {
 		return fmt.Errorf("new gameinfo.gi is still containing metamod_install line after uninstall")
 	}
 
