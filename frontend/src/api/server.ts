@@ -15,6 +15,7 @@ export enum State {
 }
 
 export interface Status {
+  is_game_server_installed: boolean;
   state: State;
   hostname: string;
   player_count: number;

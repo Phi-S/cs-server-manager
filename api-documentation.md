@@ -258,6 +258,7 @@ This operation does not require authentication
 {
   "hostname": "string",
   "ip": "string",
+  "is_game_server_installed": true,
   "map": "string",
   "max_player_count": 0,
   "password": "string",
@@ -699,6 +700,7 @@ This operation does not require authentication
 {
   "hostname": "string",
   "ip": "string",
+  "is_game_server_installed": true,
   "map": "string",
   "max_player_count": 0,
   "password": "string",
@@ -715,6 +717,7 @@ This operation does not require authentication
 |---|---|---|---|---|
 |hostname|string|false|none|none|
 |ip|string|false|none|none|
+|is_game_server_installed|boolean|false|none|none|
 |map|string|false|none|none|
 |max_player_count|integer|false|none|none|
 |password|string|false|none|none|

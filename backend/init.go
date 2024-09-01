@@ -4,6 +4,7 @@ import (
 	"cs-server-manager/config"
 	"cs-server-manager/event"
 	"cs-server-manager/game_events"
+	"cs-server-manager/gvalidator"
 	"cs-server-manager/logwrt"
 	"cs-server-manager/plugins"
 	"cs-server-manager/server"
@@ -76,7 +77,13 @@ func createRequiredServices(cfg config.Config) (
 		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to read start-parameters.json %w", err)
 	}
 
+	isGameServerInstalled, err := isGameServerInstalled(cfg.ServerDir)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to check if game server is installed: %w", err)
+	}
+
 	statusInstance := status.NewStatus(
+		isGameServerInstalled,
 		startParameters.Hostname,
 		cfg.Ip,
 		cfg.CsPort,
@@ -202,18 +209,42 @@ func registerEvents(
 	steamcmdInstance.OnFinished(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.State = status.Idle
+			isServerInstalled, err := isGameServerInstalled(configInstance.ServerDir)
+			if err != nil {
+				slog.Warn("after steamcmd finished, failed to check if game server is installed", "error", err)
+				return
+			}
+
+			internalStatus.IsGameServerInstalled = isServerInstalled
 		})
 	})
 
 	steamcmdInstance.OnCancelled(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.State = status.Idle
+
+			isServerInstalled, err := isGameServerInstalled(configInstance.ServerDir)
+			if err != nil {
+				slog.Warn("after steamcmd go canceled, failed to check if game server is installed", "error", err)
+				return
+			}
+
+			internalStatus.IsGameServerInstalled = isServerInstalled
+
 		})
 	})
 
 	steamcmdInstance.OnFailed(func(p event.PayloadWithData[error]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.State = status.Idle
+
+			isServerInstalled, err := isGameServerInstalled(configInstance.ServerDir)
+			if err != nil {
+				slog.Warn("after steamcmd failed, failed to check if game server is installed", "error", err)
+				return
+			}
+
+			internalStatus.IsGameServerInstalled = isServerInstalled
 		})
 	})
 
@@ -272,4 +303,71 @@ func registerEvents(
 			internalStatus.State = status.Idle
 		})
 	})
+}
+
+func isGameServerInstalled(serverDir string) (bool, error) {
+	if err := gvalidator.Instance().Var(serverDir, "dir"); err != nil {
+		return false, nil
+	}
+
+	size, err := getFolderSize(serverDir)
+	if err != nil {
+		return false, fmt.Errorf("failed to get serverDir '%v' size: %w", serverDir, err)
+	}
+
+	gib := size / 1024 / 1024 / 1024
+	slog.Error("size", "gib", gib)
+	if gib < 30 {
+		return false, nil
+	}
+
+	csgoDir := filepath.Join(serverDir, "game", "csgo")
+	if err := gvalidator.Instance().Var(csgoDir, "dir"); err != nil {
+		return false, nil
+	}
+
+	if err := gvalidator.Instance().Var(filepath.Join(csgoDir, "pak01_001.vpk"), "file"); err != nil {
+		return false, nil
+	}
+
+	if err := gvalidator.Instance().Var(filepath.Join(csgoDir, "pak01_001.vpk"), "file"); err != nil {
+		return false, nil
+	}
+
+	if err := gvalidator.Instance().Var(filepath.Join(csgoDir, "pak01_002.vpk"), "file"); err != nil {
+		return false, nil
+	}
+
+	cfgFolder := filepath.Join(csgoDir, "cfg")
+	if err := gvalidator.Instance().Var(csgoDir, "dir"); err != nil {
+		return false, nil
+	}
+
+	if err := gvalidator.Instance().Var(filepath.Join(cfgFolder, "gamemode_competitive.cfg"), "file"); err != nil {
+		return false, nil
+	}
+
+	if err := gvalidator.Instance().Var(filepath.Join(cfgFolder, "gamemode_deathmatch.cfg"), "file"); err != nil {
+		return false, nil
+	}
+
+	return true, nil
+
+}
+
+func getFolderSize(p string) (int64, error) {
+	var size int64
+	err := filepath.Walk(p, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get size of directory '%v': %w", p, err)
+	}
+	return size, nil
 }

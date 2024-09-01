@@ -4,6 +4,7 @@ import (
 	"cs-server-manager/constants"
 	"cs-server-manager/gvalidator"
 	"cs-server-manager/start_parameters_json"
+	"cs-server-manager/status"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -33,6 +34,15 @@ func StartHandler(c fiber.Ctx) error {
 	lock, serverInstance, steamcmd, err := GetServerSteamcmdInstances(c)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
+	}
+
+	status, err := GetFromLocals[*status.Status](c, constants.StatusKey)
+	if err != nil {
+		return NewInternalServerErrorWithInternal(c, err)
+	}
+
+	if !status.Status().IsGameServerInstalled {
+		return NewErrorWithMessage(c, fiber.StatusInternalServerError, "Game server is not yet installed")
 	}
 
 	lock.Lock()

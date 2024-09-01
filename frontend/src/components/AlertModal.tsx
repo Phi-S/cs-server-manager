@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { AlertContext } from "../contexts/AlertContext";
 
-const Alert = () => {
+export default function AlertModal() {
   const alertCtx = useContext(AlertContext);
 
   if (
@@ -45,6 +45,4 @@ const Alert = () => {
       </div>
     </>
   );
-};
-
-export default Alert;
+}

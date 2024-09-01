@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import Alert from "./components/Alert.tsx";
+import AlertHeader from "./components/AlertHeader.tsx";
+import AlertModal from "./components/AlertModal.tsx";
 import NavBar from "./components/NavBar.tsx";
 import Server from "./components/Server.tsx";
 import AlertContextWrapper from "./contexts/AlertContext.tsx";
-import WebSocketContextWrapper from "./contexts/WebSocketContext.tsx";
+import DefaultContextWrapper from "./contexts/DefaultContext.tsx";
 import { deleteCookie, getCookie, setCookie } from "./util.ts";
 
 export default function App() {
@@ -82,8 +83,9 @@ export default function App() {
       }}
     >
       <AlertContextWrapper>
-        <Alert />
-        <WebSocketContextWrapper>
+        <AlertModal />
+        <DefaultContextWrapper>
+          <AlertHeader />
           <div className="d-flex justify-content-center">
             <div
               className="w-100"
@@ -105,7 +107,7 @@ export default function App() {
               <Outlet />
             </div>
           </div>
-        </WebSocketContextWrapper>
+        </DefaultContextWrapper>
       </AlertContextWrapper>
     </div>
   );

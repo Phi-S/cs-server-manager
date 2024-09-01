@@ -3,18 +3,19 @@ import { getLogs, getStatus, LogEntry, State, Status } from "../api/server";
 import Loading from "../components/Loading";
 import { ChildrenProps } from "../misc";
 
-export const WebSocketContext = createContext<
-  WebSocketContextValue | undefined
->(undefined);
+export const DefaultContext = createContext<IDefaultContext | undefined>(
+  undefined
+);
 
-export interface WebSocketContextValue {
+export interface IDefaultContext {
   status: Status;
   logs: LogEntry[];
 }
 
-export default function WebSocketContextWrapper({ children }: ChildrenProps) {
+export default function DefaultContextWrapper({ children }: ChildrenProps) {
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState<Status>({
+    is_game_server_installed: false,
     state: State.Idle,
     hostname: "cs2 server",
     player_count: 0,
@@ -122,9 +123,9 @@ export default function WebSocketContextWrapper({ children }: ChildrenProps) {
 
   return (
     <>
-      <WebSocketContext.Provider value={{ status, logs }}>
+      <DefaultContext.Provider value={{ status, logs }}>
         {children}
-      </WebSocketContext.Provider>
+      </DefaultContext.Provider>
     </>
   );
 }

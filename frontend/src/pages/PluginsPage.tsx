@@ -7,11 +7,11 @@ import {
 } from "../api/plugins";
 import { State } from "../api/server";
 import Loading from "../components/Loading";
-import { WebSocketContext } from "../contexts/WebSocketContext";
+import { DefaultContext } from "../contexts/DefaultContext";
 import { openInNewTab } from "../util";
 
 export default function PluginsPage() {
-  const webSocketContext = useContext(WebSocketContext);
+  const defaultContext = useContext(DefaultContext);
   const [selectedVersions, setSelectedVersions] = useState<Map<string, string>>(
     new Map<string, string>()
   );
@@ -21,7 +21,7 @@ export default function PluginsPage() {
     updatePlugins();
   }, []);
 
-  if (plugins === undefined || webSocketContext === undefined) {
+  if (plugins === undefined || defaultContext === undefined) {
     return <Loading />;
   }
 
@@ -74,10 +74,10 @@ export default function PluginsPage() {
 
   return (
     <>
-      {webSocketContext.status.state === State.PluginInstalling && (
+      {defaultContext.status.state === State.PluginInstalling && (
         <Loading message="Installing plugin" />
       )}
-      {webSocketContext.status.state === State.PluginUninstalling && (
+      {defaultContext.status.state === State.PluginUninstalling && (
         <Loading message="Uninstalling plugin" />
       )}
       <table className="table">

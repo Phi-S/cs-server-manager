@@ -1,11 +1,11 @@
 import { useContext, useState } from "react";
 import { sendCommandWithoutResponse, State } from "../api/server";
 import Loading from "./Loading";
-import { WebSocketContext } from "../contexts/WebSocketContext";
+import { DefaultContext } from "../contexts/DefaultContext";
 
 export default function SendCommand() {
-  const webSocketContext = useContext(WebSocketContext);
-  if (webSocketContext === undefined) {
+  const defaultContext = useContext(DefaultContext);
+  if (defaultContext === undefined) {
     return <Loading />;
   }
 
@@ -40,15 +40,15 @@ export default function SendCommand() {
           className="input-group-text"
           style={{ width: "70%" }}
           placeholder="Server command"
-          onKeyUp={(e) => onEnter(e.key, webSocketContext.status.state)}
+          onKeyUp={(e) => onEnter(e.key, defaultContext.status.state)}
           onChange={(e) => setCommand(e.target.value)}
           autoFocus
         />
         <button
           onClick={() =>
-            sendCommandIfServerIsRunning(webSocketContext.status.state)
+            sendCommandIfServerIsRunning(defaultContext.status.state)
           }
-          disabled={webSocketContext.status.state !== State.ServerStarted}
+          disabled={defaultContext.status.state !== State.ServerStarted}
           className="btn btn-outline-info"
           style={{ width: "30%" }}
         >

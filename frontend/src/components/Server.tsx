@@ -1,12 +1,12 @@
 import { useContext } from "react";
 import { startServer, State, Status, stopServer } from "../api/server";
-import { WebSocketContext } from "../contexts/WebSocketContext";
+import { DefaultContext } from "../contexts/DefaultContext";
 import { copyToClipboard, navigateTo } from "../util";
 import Loading from "./Loading";
 
 export default function Server() {
-  const webSocketContext = useContext(WebSocketContext);
-  if (webSocketContext === undefined || webSocketContext.status === undefined) {
+  const defaultContext = useContext(DefaultContext);
+  if (defaultContext === undefined) {
     return <Loading />;
   }
 
@@ -68,23 +68,23 @@ export default function Server() {
     <>
       <div
         className={`d-flex flex-row flex-nowrap justify-content-between rounded-2 w-100 h-100 px-2 ${getBackground(
-          webSocketContext.status
+          defaultContext.status
         )}`}
-        title={`Current state: ${webSocketContext.status.state}`}
+        title={`Current state: ${defaultContext.status.state}`}
       >
         <div
-          onClick={() => navigateTo(getConnectionUrl(webSocketContext.status!))}
+          onClick={() => navigateTo(getConnectionUrl(defaultContext.status!))}
           className="d-flex w-100 btn align-items-center"
           style={{ color: "black" }}
         >
           <span className="col-8 text-start text-truncate fs-3">
-            {webSocketContext.status.hostname}
+            {defaultContext.status.hostname}
           </span>
           <div className="col-4 d-none d-sm-block text-nowrap text-end">
-            <span className="pe-2 fs-5">{webSocketContext.status.map}</span>[
+            <span className="pe-2 fs-5">{defaultContext.status.map}</span>[
             <span className="fs-5">
-              {webSocketContext.status.player_count} /{" "}
-              {webSocketContext.status.max_player_count}]
+              {defaultContext.status.player_count} /{" "}
+              {defaultContext.status.max_player_count}]
             </span>
           </div>
         </div>
@@ -93,11 +93,11 @@ export default function Server() {
         <div className="d-flex flex-row align-content-center">
           <button
             onClick={() =>
-              copyToClipboard(getConnectionString(webSocketContext.status!))
+              copyToClipboard(getConnectionString(defaultContext.status!))
             }
             className="btn bi-copy p-0 fs-2 px-2 black"
           ></button>
-          {getStartStopSpinner(webSocketContext.status)}
+          {getStartStopSpinner(defaultContext.status)}
         </div>
       </div>
     </>

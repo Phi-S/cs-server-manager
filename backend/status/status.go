@@ -8,17 +8,18 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewStatus(hostname string, ip string, port string, password string, maxPlayerCount uint8, startMap string) *Status {
+func NewStatus(isGameServerInstalled bool, hostname string, ip string, port string, password string, maxPlayerCount uint8, startMap string) *Status {
 	instance := Status{
 		internalStatus: &InternalStatus{
-			Hostname:       hostname,
-			State:          Idle,
-			PlayerCount:    0,
-			MaxPlayerCount: maxPlayerCount,
-			Map:            startMap,
-			Ip:             ip,
-			Port:           port,
-			Password:       password,
+			IsGameServerInstalled: isGameServerInstalled,
+			Hostname:              hostname,
+			State:                 Idle,
+			PlayerCount:           0,
+			MaxPlayerCount:        maxPlayerCount,
+			Map:                   startMap,
+			Ip:                    ip,
+			Port:                  port,
+			Password:              password,
 		},
 	}
 
@@ -38,14 +39,15 @@ const (
 )
 
 type InternalStatus struct {
-	State          State  `json:"state"`
-	Hostname       string `json:"hostname"`
-	PlayerCount    uint8  `json:"player_count"`
-	MaxPlayerCount uint8  `json:"max_player_count"`
-	Map            string `json:"map"`
-	Ip             string `json:"ip"`
-	Port           string `json:"port"`
-	Password       string `json:"password"`
+	IsGameServerInstalled bool   `json:"is_game_server_installed"`
+	State                 State  `json:"state"`
+	Hostname              string `json:"hostname"`
+	PlayerCount           uint8  `json:"player_count"`
+	MaxPlayerCount        uint8  `json:"max_player_count"`
+	Map                   string `json:"map"`
+	Ip                    string `json:"ip"`
+	Port                  string `json:"port"`
+	Password              string `json:"password"`
 }
 
 type Status struct {

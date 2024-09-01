@@ -1,12 +1,12 @@
 import moment from "moment";
 import { useContext } from "react";
 import { LogEntry } from "../api/server";
-import { WebSocketContext } from "../contexts/WebSocketContext";
 import Loading from "./Loading";
+import { DefaultContext } from "../contexts/DefaultContext";
 
 export default function Console() {
-  const webSocketContext = useContext(WebSocketContext);
-  if (webSocketContext === undefined) {
+  const defaultContext = useContext(DefaultContext);
+  if (defaultContext === undefined) {
     return <Loading />;
   }
 
@@ -30,7 +30,7 @@ export default function Console() {
       <div className="overflow-x-scroll rounded-3 border border-2 h-100">
         <table className="table table-sm table-striped">
           <tbody>
-            {webSocketContext.logs.map((log) => (
+            {defaultContext.logs.map((log) => (
               <tr
                 key={log.message + log.timestamp}
                 className={`border-bottom ${getLogBackgroundColor(log)}`}

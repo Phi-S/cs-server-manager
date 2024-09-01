@@ -6,27 +6,30 @@ import {
   startServer,
   startUpdate,
   State,
+  Status,
   stopServer,
 } from "../api/server";
-import { WebSocketContext } from "../contexts/WebSocketContext";
+import { DefaultContext } from "../contexts/DefaultContext";
 import Loading from "./Loading";
 
 export default function ServerControls() {
-  const webSocketContext = useContext(WebSocketContext);
-  if (webSocketContext === undefined || webSocketContext.status === undefined) {
+  const defaultContext = useContext(DefaultContext);
+  if (defaultContext === undefined) {
     return <Loading message="Loading"></Loading>;
   }
 
-  function UpdateOrCancelUpdateButton(state: State) {
-    if (state === State.SteamcmdUpdating) {
+  function UpdateOrCancelUpdateButton(status: Status) {
+    if (status.state === State.SteamcmdUpdating) {
       return (
         <>
           <button
             onClick={cancelUpdate}
             className="col-3 btn btn-outline-info"
-            disabled={state !== State.SteamcmdUpdating}
+            disabled={status.state !== State.SteamcmdUpdating}
           >
-            Cancel Update
+            {status.is_game_server_installed
+              ? "Cancel Update"
+              : "Cancel install"}
           </button>
         </>
       );
@@ -36,19 +39,23 @@ export default function ServerControls() {
           <button
             onClick={startUpdate}
             className="col-3 btn btn-outline-info"
-            disabled={state !== State.Idle}
+            disabled={status.state !== State.Idle}
           >
-            Update
+            {status.is_game_server_installed ? "Update" : "Install"}
           </button>
         </>
       );
     }
   }
 
-  function StartStopButton(state: State) {
-    if (state === State.Idle) {
+  function StartStopButton(status: Status) {
+    if (status.state === State.Idle) {
       return (
-        <button onClick={startServer} className="col-3 btn btn-outline-info">
+        <button
+          onClick={startServer}
+          className="col-3 btn btn-outline-info"
+          disabled={status.is_game_server_installed === false}
+        >
           Start
         </button>
       );
@@ -57,7 +64,7 @@ export default function ServerControls() {
         <button
           onClick={stopServer}
           className="col-3 btn btn-outline-info"
-          disabled={state !== State.ServerStarted}
+          disabled={status.state !== State.ServerStarted}
         >
           Stop
         </button>
@@ -82,18 +89,26 @@ export default function ServerControls() {
   return (
     <>
       <div className="input-group flex-nowrap w-100 h-100 m-0">
-        {StartStopButton(webSocketContext.status.state)}
-        <button onClick={restartServer} className="col-3 btn btn-outline-info">
+        {StartStopButton(defaultContext.status)}
+        <button
+          onClick={restartServer}
+          className="col-3 btn btn-outline-info"
+          disabled={
+            defaultContext.status.is_game_server_installed === false ||
+            (defaultContext.status.state !== State.ServerStarted &&
+              defaultContext.status.state !== State.Idle)
+          }
+        >
           Restart
         </button>
-        {UpdateOrCancelUpdateButton(webSocketContext.status.state)}
+        {UpdateOrCancelUpdateButton(defaultContext.status)}
 
         <div className="dropdown col-3">
           <button
             className="btn btn-outline-info dropdown-toggle w-100 h-100"
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            disabled={webSocketContext.status.state !== State.ServerStarted}
+            disabled={defaultContext.status.state !== State.ServerStarted}
           >
             Change Map
           </button>
