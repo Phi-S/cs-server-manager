@@ -27,6 +27,16 @@
             "version_name": "2.0.0-git1313"
           }
         ]
+      },
+      {
+        "name": "v264",
+        "download_url": "https://github.com/roflmuffin/CounterStrikeSharp/releases/download/v264/counterstrikesharp-with-runtime-build-264-linux-8f59fd5.zip",
+        "dependencies": [
+          {
+            "plugin_name": "metamod_source",
+            "version_name": "2.0.0-git1313"
+          }
+        ]
       }
     ]
   },
@@ -43,6 +53,16 @@
           {
             "plugin_name": "CounterStrikeSharp",
             "version_name": "v255"
+          }
+        ]
+      },
+      {
+        "name": "0.0.15",
+        "download_url": "https://github.com/Phi-S/cs2-practice-mode/releases/download/0.0.15/cs2-practice-mode-linux-0.0.15.tar.gz",
+        "dependencies": [
+          {
+            "plugin_name": "CounterStrikeSharp",
+            "version_name": "v264"
           }
         ]
       }
