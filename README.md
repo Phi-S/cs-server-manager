@@ -2,7 +2,7 @@
 
 ## :warning: This project is under active development.<br/>:warning: Expect bugs and breaking changes
 
-## :warning: This project is designed to only run on Linux (for now).<br/>For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used.
+## This project is designed to only run on Linux (for now).<br/>For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used.
 
 <br/>
 
@@ -51,7 +51,7 @@ go mod download
 go run .
 ```
 
-> Status endpoint: [http://localhost:8080/api/v1/status](http://localhost:8080/api/v1/logs/100) <br/>
+> Status endpoint: [http://localhost:8080/api/v1/status](http://localhost:8080/api/v1/status) <br/>
 
 ### Frontend:
 
