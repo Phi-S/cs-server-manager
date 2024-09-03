@@ -2,37 +2,74 @@
 
 ## :warning: This project is under active development.<br/>:warning: Expect bugs and breaking changes
 
-## :warning: This project is designed to only run on linux (for now)<br/>For development under Windows use WSL
+## :warning: This project is designed to only run on Linux (for now).<br/>For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used.
 
 <br/>
 
-# API [DOCUMENTATION](api-documentation.md)
+# API
+
+### [API documentation](api-documentation.md)
 
 Default API path: `/api/v1`
 
 Default Swagger UI path: `/api/swagger/index.html`
 
-> Local development example URLs:
-> API logs endpoint: [http://localhost:8080/api/v1/logs/100](http://localhost:8080/api/v1/logs/100) > <br/>
-> swagger URL: [http://localhost:8080/api/swagger/index.html](http://localhost:8080/api/swagger/index.html)
-
----
+<br/>
 
 # Web UI
 
-The Web UI is hosted by default under the base path
-
-> Local development example URL: [http://localhost:8080](http://localhost:8080)
-
 ![Web UI](web-ui-start-server.gif)
 
----
+<br/>
 
-# Commands
+# Development
+
+> This project is designed to only run on Linux (for now).<br/>
+> For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used
+
+## Prerequisites:
+
+- Go version [1.22 or higher](https://go.dev/doc/install)
+- NodeJs [v20.17.0](https://nodejs.org/en)
+- Steamcmd requires `lib32gcc-s1` to run.
+  `sudo apt install lib32gcc-s1`
+
+## Setup local development environment
+
+### Git:
+
+```
+git clone https://github.com/Phi-S/cs-server-manager.git
+cd cs-server-manager
+```
+
+### Backend:
+
+```
+cd backend
+go mod download
+go run .
+```
+
+> Status endpoint: [http://localhost:8080/api/v1/status](http://localhost:8080/api/v1/logs/100) <br/>
+
+### Frontend:
+
+```
+cd frontend
+npm install
+npm run dev
+```
+
+> URL: [http://localhost:8090](http://localhost:8090)
+
+<br/>
+
+# Build
 
 > All commands should be run from the root of this repo
 
-## Build
+### Binary:
 
 ```
 npm install --prefix frontend/
@@ -48,21 +85,21 @@ go mod download -C backend/
 go build -C backend/ -v -o ../cs-server-manager
 ```
 
-## Docker
+### Docker:
 
 ```
 docker build -t cs-server-manager .
-docker run -it --rm --name cs-server-manager --mount type=bind,source=/cs-server-manager,destination=/data -p 8080:8080 -p 27015:27015 cs-server-manager
+docker run -it --rm --name cs-server-manager --mount type=bind,source=/{INSTALLATION_DIRECTORY},destination=/data -p 8080:8080 -p 27015:27015 cs-server-manager
 ```
 
-## Generate swagger docs with [swaggo/swag](https://github.com/swaggo/swag)
+### Generate swagger docs with [swaggo/swag](https://github.com/swaggo/swag):
 
 ```
 go install github.com/swaggo/swag/cmd/swag@v1.16.3
 swag init --dir backend -o . -ot json
 ```
 
-## Generate api-documentation.md with [widdershins](https://github.com/Mermade/widdershins)
+### Generate api-documentation.md with [widdershins](https://github.com/Mermade/widdershins):
 
 > Requires generated swagger docs
 
@@ -70,6 +107,8 @@ swag init --dir backend -o . -ot json
 npm install widdershins@v4.0.0
 npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentation.md backend/docs/swagger.json
 ```
+
+<br/>
 
 # Environment variables
 
