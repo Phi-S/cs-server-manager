@@ -7,3 +7,4 @@ data/
 
 cs-server-manager
 backend/web/
+backend/.env
