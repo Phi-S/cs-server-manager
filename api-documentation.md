@@ -10,11 +10,13 @@ Base URLs:
 
 <h1 id="cs-server-manager-api-logs">logs</h1>
 
-## Get logs
+## get__logs_{count}
 
 `GET /logs/{count}`
 
-<h3 id="get-logs-parameters">Parameters</h3>
+*Get logs*
+
+<h3 id="get__logs_{count}-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -34,7 +36,7 @@ Base URLs:
 ]
 ```
 
-<h3 id="get-logs-responses">Responses</h3>
+<h3 id="get__logs_{count}-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -42,7 +44,7 @@ Base URLs:
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 
-<h3 id="get-logs-responseschema">Response Schema</h3>
+<h3 id="get__logs_{count}-responseschema">Response Schema</h3>
 
 Status Code **200**
 
@@ -59,9 +61,11 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-plugins">plugins</h1>
 
-## Get all available plugins
+## get__plugins
 
 `GET /plugins`
+
+*Get all available plugins*
 
 > Example responses
 
@@ -76,8 +80,13 @@ This operation does not require authentication
     {
       "dependencies": [
         {
-          "plugin_name": "string",
-          "version_name": "string"
+          "dependencies": [
+            {}
+          ],
+          "download_url": "string",
+          "install_dir": "string",
+          "name": "string",
+          "version": "string"
         }
       ],
       "installed": true,
@@ -87,7 +96,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="get-all-available-plugins-responses">Responses</h3>
+<h3 id="get__plugins-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -99,9 +108,11 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-## Install given plugin
+## post__plugins
 
 `POST /plugins`
+
+*Install given plugin*
 
 > Body parameter
 
@@ -112,7 +123,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="install-given-plugin-parameters">Parameters</h3>
+<h3 id="post__plugins-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -124,7 +135,7 @@ This operation does not require authentication
 
 > 400 Response
 
-<h3 id="install-given-plugin-responses">Responses</h3>
+<h3 id="post__plugins-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -136,15 +147,17 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-## Uninstall the currently installed plugin
+## delete__plugins
 
 `DELETE /plugins`
+
+*Uninstall the currently installed plugin*
 
 > Example responses
 
 > 400 Response
 
-<h3 id="uninstall-the-currently-installed-plugin-responses">Responses</h3>
+<h3 id="delete__plugins-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -158,9 +171,11 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-server">server</h1>
 
-## Send game-server command
+## post__send-command
 
 `POST /send-command`
+
+*Send game-server command*
 
 > Body parameter
 
@@ -170,7 +185,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="send-game-server-command-parameters">Parameters</h3>
+<h3 id="post__send-command-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -189,7 +204,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="send-game-server-command-responses">Responses</h3>
+<h3 id="post__send-command-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -201,9 +216,11 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-## Start the server
+## post__start
 
 `POST /start`
+
+*Start the server*
 
 Starts the server with the given start parameters
 
@@ -219,7 +236,7 @@ Starts the server with the given start parameters
 }
 ```
 
-<h3 id="start-the-server-parameters">Parameters</h3>
+<h3 id="post__start-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -234,7 +251,7 @@ Starts the server with the given start parameters
 
 > 400 Response
 
-<h3 id="start-the-server-responses">Responses</h3>
+<h3 id="post__start-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -246,9 +263,11 @@ Starts the server with the given start parameters
 This operation does not require authentication
 </aside>
 
-## Get the current status of the server
+## get__status
 
 `GET /status`
+
+*Get the current status of the server*
 
 > Example responses
 
@@ -268,7 +287,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="get-the-current-status-of-the-server-responses">Responses</h3>
+<h3 id="get__status-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -280,9 +299,11 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-## Stop the server
+## post__stop
 
 `POST /stop`
+
+*Stop the server*
 
 Stops the server of if the server is not running, returns 200 OK
 
@@ -290,7 +311,7 @@ Stops the server of if the server is not running, returns 200 OK
 
 > 400 Response
 
-<h3 id="stop-the-server-responses">Responses</h3>
+<h3 id="post__stop-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -304,9 +325,11 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-settings">settings</h1>
 
-## Get the current settings
+## get__settings
 
 `GET /settings`
+
+*Get the current settings*
 
 > Example responses
 
@@ -322,7 +345,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="get-the-current-settings-responses">Responses</h3>
+<h3 id="get__settings-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -334,9 +357,11 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-## Update settings
+## post__settings
 
 `POST /settings`
+
+*Update settings*
 
 > Body parameter
 
@@ -350,7 +375,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="update-settings-parameters">Parameters</h3>
+<h3 id="post__settings-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
@@ -375,7 +400,7 @@ This operation does not require authentication
 }
 ```
 
-<h3 id="update-settings-responses">Responses</h3>
+<h3 id="post__settings-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -389,15 +414,17 @@ This operation does not require authentication
 
 <h1 id="cs-server-manager-api-update">update</h1>
 
-## Start server update
+## post__update
 
 `POST /update`
+
+*Start server update*
 
 > Example responses
 
 > 400 Response
 
-<h3 id="start-server-update-responses">Responses</h3>
+<h3 id="post__update-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -409,9 +436,11 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-## Cancel the server update
+## post__update_cancel
 
 `POST /update/cancel`
+
+*Cancel the server update*
 
 Cancel the currently running server update or if no update is currently running, returns 200 OK
 
@@ -419,7 +448,7 @@ Cancel the currently running server update or if no update is currently running,
 
 > 400 Response
 
-<h3 id="cancel-the-server-update-responses">Responses</h3>
+<h3 id="post__update_cancel-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
@@ -521,6 +550,42 @@ This operation does not require authentication
 |name|string|false|none|none|
 |version|string|false|none|none|
 
+<h2 id="tocS_handlers.PluginDependencyResponse">handlers.PluginDependencyResponse</h2>
+<!-- backwards compatibility -->
+<a id="schemahandlers.plugindependencyresponse"></a>
+<a id="schema_handlers.PluginDependencyResponse"></a>
+<a id="tocShandlers.plugindependencyresponse"></a>
+<a id="tocshandlers.plugindependencyresponse"></a>
+
+```json
+{
+  "dependencies": [
+    {
+      "dependencies": [],
+      "download_url": "string",
+      "install_dir": "string",
+      "name": "string",
+      "version": "string"
+    }
+  ],
+  "download_url": "string",
+  "install_dir": "string",
+  "name": "string",
+  "version": "string"
+}
+
+```
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|dependencies|[[handlers.PluginDependencyResponse](#schemahandlers.plugindependencyresponse)]|false|none|none|
+|download_url|string|false|none|none|
+|install_dir|string|false|none|none|
+|name|string|false|none|none|
+|version|string|false|none|none|
+
 <h2 id="tocS_handlers.PluginResponse">handlers.PluginResponse</h2>
 <!-- backwards compatibility -->
 <a id="schemahandlers.pluginresponse"></a>
@@ -537,8 +602,13 @@ This operation does not require authentication
     {
       "dependencies": [
         {
-          "plugin_name": "string",
-          "version_name": "string"
+          "dependencies": [
+            {}
+          ],
+          "download_url": "string",
+          "install_dir": "string",
+          "name": "string",
+          "version": "string"
         }
       ],
       "installed": true,
@@ -558,28 +628,6 @@ This operation does not require authentication
 |url|string|false|none|none|
 |versions|[[handlers.PluginVersionResponse](#schemahandlers.pluginversionresponse)]|false|none|none|
 
-<h2 id="tocS_handlers.PluginVersionDependenciesResponse">handlers.PluginVersionDependenciesResponse</h2>
-<!-- backwards compatibility -->
-<a id="schemahandlers.pluginversiondependenciesresponse"></a>
-<a id="schema_handlers.PluginVersionDependenciesResponse"></a>
-<a id="tocShandlers.pluginversiondependenciesresponse"></a>
-<a id="tocshandlers.pluginversiondependenciesresponse"></a>
-
-```json
-{
-  "plugin_name": "string",
-  "version_name": "string"
-}
-
-```
-
-### Properties
-
-|Name|Type|Required|Restrictions|Description|
-|---|---|---|---|---|
-|plugin_name|string|false|none|none|
-|version_name|string|false|none|none|
-
 <h2 id="tocS_handlers.PluginVersionResponse">handlers.PluginVersionResponse</h2>
 <!-- backwards compatibility -->
 <a id="schemahandlers.pluginversionresponse"></a>
@@ -591,8 +639,13 @@ This operation does not require authentication
 {
   "dependencies": [
     {
-      "plugin_name": "string",
-      "version_name": "string"
+      "dependencies": [
+        {}
+      ],
+      "download_url": "string",
+      "install_dir": "string",
+      "name": "string",
+      "version": "string"
     }
   ],
   "installed": true,
@@ -605,7 +658,7 @@ This operation does not require authentication
 
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
-|dependencies|[[handlers.PluginVersionDependenciesResponse](#schemahandlers.pluginversiondependenciesresponse)]|false|none|none|
+|dependencies|[[handlers.PluginDependencyResponse](#schemahandlers.plugindependencyresponse)]|false|none|none|
 |installed|boolean|false|none|none|
 |name|string|false|none|none|
 

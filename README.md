@@ -94,6 +94,15 @@ docker run -it --rm --name cs-server-manager --mount type=bind,source=/{INSTALLA
 
 ### Generate swagger docs with [swaggo/swag](https://github.com/swaggo/swag):
 
+> If the command `swag` was not found, add the following lines to your `.bashrc` and restart your terminal.
+>
+> ```
+> export GOPATH="$HOME/go"
+> export PATH=$PATH:$GOPATH/bin
+> ```
+>
+> [source](https://stackoverflow.com/a/72166253/12487257)
+
 ```
 go install github.com/swaggo/swag/cmd/swag@v1.16.3
 swag init --dir backend -o . -ot json
@@ -105,7 +114,7 @@ swag init --dir backend -o . -ot json
 
 ```
 npm install widdershins@v4.0.0
-npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentation.md backend/docs/swagger.json
+npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentation.md swagger.json
 ```
 
 <br/>
@@ -127,3 +136,97 @@ npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentati
 | STEAMCMD_DIR   | string | {DATA_DIR}/steamcmd | The steamcmd directory                                                                                                                |
 | ENABLE_WEB_UI  | bool   | true                | If set to true, the backend will host the WEB UI                                                                                      |
 | ENABLE_SWAGGER | bool   | true                | If set to true, the backend will host the swagger UI                                                                                  |
+
+<br/>
+
+# Plugins
+
+## Default plugins list
+
+By default, following plugins are available via one click install.
+
+- [Cs2PracticeMode](https://github.com/Phi-S/cs2-practice-mode).
+
+> If you want your plugin to be in this default list, please add it to the [default_plugins.go](/backend/plugins/default_plugins.go) file.
+
+## Custom install actions
+
+Some plugins require additional steps after installation for them to work correctly.
+<br/>
+For example: Metamod requires a line to be added in the `gameinfo.gi` for it to work.
+<br/>
+For Metamod, this action will be automatically executed if you try to install `metamod_source`(name must match) as dependency for your custom plugin.
+
+If your plugin requires such an action add it to the [custom_install_actions.go](/backend/plugins/custom_install_actions.go) file.
+
+## Custom `plugins.json`
+
+It is also possible to create your own plugins list.
+
+To create your own list create a file called `plugins.json` in the `{DATA_DIR}`(By Default `/data`) directory.
+
+This will overwrite the [default plugin list](#default-plugins-list), so only the plugins defined in the new `plugin.json` will be available for installation.
+
+> At the moment only `.tar.gz` and `.zip` files are supported
+
+The `install_dir` field is the directory in which the downloaded content gets extracted to.
+<br/>
+`/` means `/{SERVER_DIR}/game/csgo`.
+
+### Example `plugins.json`
+
+```
+[
+  {
+    "name": "CounterStrikeSharp",
+    "description": "CounterStrikeSharp allows you to write server plugins in C# for Counter-Strike 2/Source2/CS2",
+    "url": "https://github.com/roflmuffin/CounterStrikeSharp",
+    "install_dir": "/",
+    "versions": [
+      {
+        "name": "v264",
+        "download_url": "https://github.com/roflmuffin/CounterStrikeSharp/releases/download/v264/counterstrikesharp-with-runtime-build-264-linux-8f59fd5.zip",
+        "dependencies": [
+          {
+            "name": "metamod_source",
+            "install_dir": "/",
+            "version": "2.0.0-git1313",
+            "download_url": "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1313-linux.tar.gz",
+            "dependencies": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Cs2PracticeMode",
+    "description": "Practice mode for cs2 server based on CounterStrikeSharp",
+    "url": "https://github.com/Phi-S/cs2-practice-mode",
+    "install_dir": "/addons/counterstrikesharp/plugins/",
+    "versions": [
+      {
+        "name": "0.0.16",
+        "download_url": "https://github.com/Phi-S/cs2-practice-mode/releases/download/0.0.16/cs2-practice-mode-0.0.16.tar.gz",
+        "dependencies": [
+          {
+            "name": "CounterStrikeSharp",
+            "install_dir": "/",
+            "version": "v264",
+            "download_url": "https://github.com/roflmuffin/CounterStrikeSharp/releases/download/v264/counterstrikesharp-with-runtime-build-264-linux-8f59fd5.zip",
+            "dependencies": [
+              {
+                "name": "metamod_source",
+                "install_dir": "/",
+                "version": "2.0.0-git1313",
+                "download_url": "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1313-linux.tar.gz",
+                "dependencies": null
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
+
+```

@@ -6,6 +6,7 @@ import {
   uninstallPlugin,
 } from "../api/plugins";
 import { State } from "../api/server";
+import ConfirmModal from "../components/ConfirmModal";
 import Loading from "../components/Loading";
 import { DefaultContext } from "../contexts/DefaultContext";
 import { openInNewTab } from "../util";
@@ -16,6 +17,10 @@ export default function PluginsPage() {
     new Map<string, string>()
   );
   const [plugins, setPlugins] = useState<PluginResp[]>();
+  const [confirm, setConfirm] = useState<
+    | { title?: string; message: string; handleConfirmation: () => void }
+    | undefined
+  >(undefined);
 
   useEffect(() => {
     updatePlugins();
@@ -23,6 +28,18 @@ export default function PluginsPage() {
 
   if (plugins === undefined || defaultContext === undefined) {
     return <Loading />;
+  }
+
+  function isAnyPluginInstalled(plugins: PluginResp[]) {
+    for (const plugin of plugins) {
+      for (const pluginVersion of plugin.versions) {
+        if (pluginVersion.installed === true) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   function isPluginInstalled(
@@ -43,8 +60,32 @@ export default function PluginsPage() {
     return false;
   }
 
+  function install(plugins: PluginResp[], pluginName: string, version: string) {
+    if (isAnyPluginInstalled(plugins)) {
+      setConfirm({
+        message: `Are you sure you want to uninstall the current plugin and install ${pluginName} (${version})?`,
+        handleConfirmation: () => {
+          setConfirm(undefined);
+          uninstallPlugin().then(() => {
+            installPlugin(pluginName, version).then(() => {
+              updatePlugins();
+            });
+          });
+        },
+      });
+    } else {
+      installPlugin(pluginName, version).then(() => {
+        updatePlugins();
+      });
+    }
+  }
+
   function updatePlugins() {
     getPlugins().then((value) => {
+      value.forEach((plugin) => {
+        plugin.versions = plugin.versions.reverse();
+      });
+
       setPlugins(value);
       for (const plugin of value) {
         if (plugin.versions.length <= 0) {
@@ -74,6 +115,14 @@ export default function PluginsPage() {
 
   return (
     <>
+      {confirm !== undefined && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          handleConfirmation={confirm.handleConfirmation}
+          handleClose={() => setConfirm(undefined)}
+        />
+      )}
       {defaultContext.status.state === State.PluginInstalling && (
         <Loading message="Installing plugin" />
       )}
@@ -126,10 +175,11 @@ export default function PluginsPage() {
                   <button
                     className="btn btn-outline-info w-100"
                     onClick={() =>
-                      installPlugin(
+                      install(
+                        plugins,
                         plugin.name,
                         getSelectedVersion(plugin.name)
-                      ).then((_) => updatePlugins())
+                      )
                     }
                   >
                     Install

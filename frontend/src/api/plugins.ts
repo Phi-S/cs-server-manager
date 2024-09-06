@@ -14,8 +14,9 @@ export interface Version {
 }
 
 export interface Dependency {
-  plugin_name: string;
-  version_name: string;
+  name: string;
+  version: string;
+  dependencies: Dependency[];
 }
 
 export async function getPlugins(): Promise<PluginResp[]> {

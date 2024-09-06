@@ -4,6 +4,7 @@ import (
 	"cs-server-manager/constants"
 	"cs-server-manager/plugins"
 	"fmt"
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -15,14 +16,17 @@ type PluginResponse struct {
 }
 
 type PluginVersionResponse struct {
-	Name         string                              `json:"name"`
-	Installed    bool                                `json:"installed"`
-	Dependencies []PluginVersionDependenciesResponse `json:"dependencies"`
+	Name         string                     `json:"name"`
+	Installed    bool                       `json:"installed"`
+	Dependencies []PluginDependencyResponse `json:"dependencies"`
 }
 
-type PluginVersionDependenciesResponse struct {
-	PluginName  string `json:"plugin_name"`
-	VersionName string `json:"version_name"`
+type PluginDependencyResponse struct {
+	Name         string                     `json:"name"`
+	InstallDir   string                     `json:"install_dir"`
+	Version      string                     `json:"version"`
+	DownloadURL  string                     `json:"download_url"`
+	Dependencies []PluginDependencyResponse `json:"dependencies"`
 }
 
 // GetPluginsHandler
@@ -36,37 +40,29 @@ type PluginVersionDependenciesResponse struct {
 func GetPluginsHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
-		return NewInternalServerErrorWithInternal(c, err)
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("failed to get plugins instance from context: %w", err))
 	}
 
 	installedPlugin, err := pluginsInstance.GetInstalledPlugin()
 	if err != nil {
-		return NewInternalServerErrorWithInternal(c, err)
+		return NewInternalServerErrorWithInternal(c, fmt.Errorf("failed to get installed plugins: %w", err))
 	}
 
 	availablePlugins := pluginsInstance.GetAllAvailablePlugins()
+	if availablePlugins == nil {
+		return c.Status(fiber.StatusOK).JSON(make([]PluginResponse, 0))
+	}
 
 	result := make([]PluginResponse, 0, len(availablePlugins))
 
 	for _, plugin := range availablePlugins {
-		versions := make([]PluginVersionResponse, 0)
+		versions := make([]PluginVersionResponse, 0, len(plugin.Versions))
 		for _, version := range plugin.Versions {
-			versionDependencies := make([]PluginVersionDependenciesResponse, 0)
-			for _, dependency := range version.Dependencies {
-				versionDependencies = append(versionDependencies, PluginVersionDependenciesResponse{
-					PluginName:  dependency.PluginName,
-					VersionName: dependency.VersionName,
-				})
-			}
-
-			versionResponse := PluginVersionResponse{
+			versions = append(versions, PluginVersionResponse{
 				Name:         version.Name,
-				Installed:    false,
-				Dependencies: versionDependencies,
-			}
-
-			versionResponse.Installed = installedPlugin != nil && installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name
-			versions = append(versions, versionResponse)
+				Installed:    installedPlugin != nil && installedPlugin.Name == plugin.Name && installedPlugin.Version == version.Name,
+				Dependencies: mapPluginDependencyToPluginDependencyResponses(version.Dependencies),
+			})
 		}
 
 		result = append(result, PluginResponse{
@@ -78,6 +74,25 @@ func GetPluginsHandler(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(result)
+}
+
+func mapPluginDependencyToPluginDependencyResponses(dependencies []plugins.PluginDependency) []PluginDependencyResponse {
+	if len(dependencies) == 0 {
+		return nil
+	}
+
+	var result = make([]PluginDependencyResponse, 0, len(dependencies))
+	for _, d := range dependencies {
+		result = append(result, PluginDependencyResponse{
+			Name:         d.Name,
+			InstallDir:   d.InstallDir,
+			Version:      d.Version,
+			DownloadURL:  d.DownloadURL,
+			Dependencies: mapPluginDependencyToPluginDependencyResponses(d.Dependencies),
+		})
+	}
+
+	return result
 }
 
 type InstallPluginRequest struct {

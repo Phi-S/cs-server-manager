@@ -5,8 +5,29 @@ import (
 	"cs-server-manager/gvalidator"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
+
+func executeCustomInstallAction(csgoDir, pluginName string) error {
+	if pluginName == "metamod_source" {
+		if err := metamodInstall(filepath.Join(csgoDir, "gameinfo.gi")); err != nil {
+			return fmt.Errorf("metamodInstall: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func executeCustomUninstallAction(csgoDir, pluginName string) error {
+	if pluginName == "metamod_source" {
+		if err := metamodUninstall(filepath.Join(csgoDir, "gameinfo.gi")); err != nil {
+			return fmt.Errorf("metamodUninstall: %w", err)
+		}
+	}
+
+	return nil
+}
 
 func metamodInstall(gameinfoPath string) error {
 	if err := gvalidator.Instance().Var(gameinfoPath, "required,file"); err != nil {

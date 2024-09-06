@@ -460,6 +460,29 @@
                 }
             }
         },
+        "handlers.PluginDependencyResponse": {
+            "type": "object",
+            "properties": {
+                "dependencies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.PluginDependencyResponse"
+                    }
+                },
+                "download_url": {
+                    "type": "string"
+                },
+                "install_dir": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.PluginResponse": {
             "type": "object",
             "properties": {
@@ -480,24 +503,13 @@
                 }
             }
         },
-        "handlers.PluginVersionDependenciesResponse": {
-            "type": "object",
-            "properties": {
-                "plugin_name": {
-                    "type": "string"
-                },
-                "version_name": {
-                    "type": "string"
-                }
-            }
-        },
         "handlers.PluginVersionResponse": {
             "type": "object",
             "properties": {
                 "dependencies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handlers.PluginVersionDependenciesResponse"
+                        "$ref": "#/definitions/handlers.PluginDependencyResponse"
                     }
                 },
                 "installed": {
