@@ -1,0 +1,103 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version"
+        required: false
+        default: ""
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: version-increment
+        if: ${{ github.event.inputs.version == '' }}
+        uses: reecetech/version-increment@2024.9.2
+        with:
+          scheme: semver
+          increment: patch
+
+      - name: Version
+        id: version
+        run: |
+          VERSION=""
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION=${{ github.event.inputs.version }}
+            echo "using version from input "${{ github.event.inputs.version }}""
+          else
+            VERSION=${{ steps.version-increment.outputs.version }}
+            echo "using version from version-increment "${{ steps.version-increment.outputs.version }}""
+          fi
+
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "version ($VERSION) dose not match required pattern. Valid example: 1.2.3"
+              exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
+
+      - name: Set Go enviorment
+        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Generate output names
+        id: names
+        run: |
+          echo "binary=cs-server-manager-${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "docker=${{ secrets.DOCKER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY }}:${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "docker_latest=${{ secrets.DOCKER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build binary
+        run: sh build.sh
+
+      - name: Rename binary
+        run: mv cs-server-manager ${{ steps.names.outputs.binary }}
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.names.outputs.binary }}
+          path: ${{ steps.names.outputs.binary }}
+
+      - name: Build docker image
+        run: docker build -t cs-server-manager .
+
+      - name: docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Tag docker images
+        run: |
+          docker image tag cs-server-manager ${{ steps.names.outputs.docker }}
+          docker image tag cs-server-manager ${{ steps.names.outputs.docker_latest }}
+
+      - name: Push docker images
+        run: |
+          docker image push ${{ steps.names.outputs.docker }}
+          docker image push ${{ steps.names.outputs.docker_latest }}
+
+      - name: release
+        uses: softprops/action-gh-release@v2
+        with:
+          fail_on_unmatched_files: true
+          files: ${{ steps.names.outputs.binary }}
+          tag_name: ${{ steps.version.outputs.version }}
