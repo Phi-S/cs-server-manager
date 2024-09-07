@@ -13,7 +13,7 @@ export function GetApiUrl(): string {
         API_URL = `http://${BACKEND_HOST}${apiPath}`;
       }
     } else {
-      if (window.location.protocol === "https") {
+      if (window.location.protocol === "https:") {
         API_URL = `https://${window.location.host}${apiPath}`;
       } else {
         API_URL = `http://${window.location.host}${apiPath}`;

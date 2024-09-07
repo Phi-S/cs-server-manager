@@ -146,7 +146,7 @@ function GetWebSocketUrl() {
         WEBSOCKET_URL = `ws://${BACKEND_HOST}${websocketPath}`;
       }
     } else {
-      if (window.location.protocol === "https") {
+      if (window.location.protocol === "https:") {
         WEBSOCKET_URL = `wss://${window.location.host}${websocketPath}`;
       } else {
         WEBSOCKET_URL = `ws://${window.location.host}${websocketPath}`;

@@ -163,8 +163,9 @@ func startApi(
 		},
 	})
 
+	app.Use(cors.New())
+
 	api := app.Group("/api")
-	api.Use(cors.New())
 	api.Use(requestid.New())
 	api.Use(logMiddleware)
 	api.Use(panicHandler)
