@@ -120,8 +120,12 @@ func GetConfig() (Config, error) {
 	}
 
 	// DATA_DIR
+	workingDir, err := os.Getwd()
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to get working directory: %w", err)
+	}
 	const dataDirKey = "DATA_DIR"
-	dataDir, err := getEnvWithDefaultValueIfEmpty(dataDirKey, "dirpath", "/data")
+	dataDir, err := getEnvWithDefaultValueIfEmpty(dataDirKey, "dirpath", workingDir)
 	if err != nil {
 		return Config{}, err
 	}

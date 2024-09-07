@@ -11,6 +11,51 @@
     },
     "basePath": "/api/v1",
     "paths": {
+        "/command": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "server"
+                ],
+                "summary": "Send game-server command",
+                "parameters": [
+                    {
+                        "description": "This command will be executed on the game server",
+                        "name": "command",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CommandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CommandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/logs/{count}": {
             "get": {
                 "produces": [
@@ -129,51 +174,6 @@
                 "responses": {
                     "200": {
                         "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/send-command": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "server"
-                ],
-                "summary": "Send game-server command",
-                "parameters": [
-                    {
-                        "description": "This command will be executed on the game server",
-                        "name": "command",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.CommandRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.CommandResponse"
-                        }
                     },
                     "400": {
                         "description": "Bad Request",

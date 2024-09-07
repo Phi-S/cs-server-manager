@@ -4,14 +4,19 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// UpdateHandler
+func RegisterUpdate(r fiber.Router) {
+	r.Post("/update", startUpdateHandler)
+	r.Post("/update/cancel", cancelUpdateHandler)
+}
+
+// startUpdateHandler
 // @Summary				Start server update
 // @Tags         		update
 // @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/update [post]
-func UpdateHandler(c fiber.Ctx) error {
+func startUpdateHandler(c fiber.Ctx) error {
 	lock, serverInstance, steamcmdInstance, err := GetServerSteamcmdInstances(c)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
@@ -35,7 +40,7 @@ func UpdateHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusAccepted)
 }
 
-// CancelUpdateHandler	CancelUpdate
+// cancelUpdateHandler	CancelUpdate
 // @Summary				Cancel the server update
 // @Description 		Cancel the currently running server update or if no update is currently running, returns 200 OK
 // @Tags         		update
@@ -43,7 +48,7 @@ func UpdateHandler(c fiber.Ctx) error {
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/update/cancel [post]
-func CancelUpdateHandler(c fiber.Ctx) error {
+func cancelUpdateHandler(c fiber.Ctx) error {
 	_, _, steamcmdInstance, err := GetServerSteamcmdInstances(c)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)

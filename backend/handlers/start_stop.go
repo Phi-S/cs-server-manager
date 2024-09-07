@@ -20,7 +20,12 @@ type StartBody struct {
 	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,eq=32"`
 }
 
-// StartHandler
+func RegisterStartStop(r fiber.Router) {
+	r.Post("/start", startHandler)
+	r.Post("/stop", stopHandler)
+}
+
+// startHandler
 // @Summary      Start the server
 // @Description	 Starts the server with the given start parameters
 // @Tags         server
@@ -30,7 +35,7 @@ type StartBody struct {
 // @Failure      400  {object}  handlers.ErrorResponse
 // @Failure      500  {object}  handlers.ErrorResponse
 // @Router       /start [post]
-func StartHandler(c fiber.Ctx) error {
+func startHandler(c fiber.Ctx) error {
 	lock, serverInstance, steamcmd, err := GetServerSteamcmdInstances(c)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
@@ -103,6 +108,34 @@ func StartHandler(c fiber.Ctx) error {
 
 	if err := startParameterJsonFile.Write(startParameters); err != nil {
 		slog.Warn("server started but failed to save valid start parameters to file. " + err.Error())
+	}
+
+	return c.SendStatus(fiber.StatusOK)
+}
+
+// stopHandler
+// @Summary 	Stop the server
+// @Description Stops the server of if the server is not running, returns 200 OK
+// @Tags        server
+// @Success     200
+// @Failure     400  {object}  handlers.ErrorResponse
+// @Failure     500  {object}  handlers.ErrorResponse
+// @Router      /stop [post]
+func stopHandler(c fiber.Ctx) error {
+	lock, server, _, err := GetServerSteamcmdInstances(c)
+	if err != nil {
+		return NewInternalServerErrorWithInternal(c, err)
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	if !server.IsRunning() {
+		return c.SendStatus(fiber.StatusOK)
+	}
+
+	if err := server.Stop(); err != nil {
+		return NewErrorWithInternal(c, fiber.StatusInternalServerError, "failed to stop server", err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)

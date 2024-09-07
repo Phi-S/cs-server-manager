@@ -316,7 +316,6 @@ func isGameServerInstalled(serverDir string) (bool, error) {
 	}
 
 	gib := size / 1024 / 1024 / 1024
-	slog.Error("size", "gib", gib)
 	if gib < 30 {
 		return false, nil
 	}

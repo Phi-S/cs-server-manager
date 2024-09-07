@@ -70,7 +70,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// linking up all services via events
 	registerEvents(
 		cfg,
 		serverInstance,
@@ -153,11 +152,7 @@ func startApi(
 				msg = e.Message
 			}
 
-			resp := struct {
-				Status    int    `json:"status"`
-				Message   string `json:"message"`
-				RequestId string `json:"request_id"`
-			}{
+			resp := handlers.ErrorResponse{
 				Status:    code,
 				Message:   msg,
 				RequestId: requestId,
@@ -168,12 +163,11 @@ func startApi(
 		},
 	})
 
-	app.Use(cors.New())
-	app.Use(requestid.New())
-	app.Use(logMiddleware)
-	app.Use(panicHandler)
-
 	api := app.Group("/api")
+	api.Use(cors.New())
+	api.Use(requestid.New())
+	api.Use(logMiddleware)
+	api.Use(panicHandler)
 
 	v1 := api.Group("/v1", func(c fiber.Ctx) error {
 		c.Locals(constants.ConfigKey, config)
@@ -183,31 +177,17 @@ func startApi(
 		c.Locals(constants.StartParametersJsonFileKey, startParametersJsonFile)
 		c.Locals(constants.StatusKey, status)
 		c.Locals(constants.PluginsKey, pluginsInstance)
-		return c.Next()
-	})
-
-	v1.Get("/status", handlers.StatusHandler)
-
-	v1.Post("/start", handlers.StartHandler)
-	v1.Post("/stop", handlers.StopHandler)
-	v1.Post("/command", handlers.SendCommandHandler)
-
-	v1.Post("/update", handlers.UpdateHandler)
-	v1.Post("/update/cancel", handlers.CancelUpdateHandler)
-
-	v1.Get("/settings", handlers.GetSettingsHandler)
-	v1.Post("/settings", handlers.UpdateSettingsHandler)
-
-	v1.Get("/plugins", handlers.GetPluginsHandler)
-	v1.Post("/plugins", handlers.InstallPluginHandler)
-	v1.Delete("/plugins", handlers.UninstallPluginHandler)
-
-	logGroup := v1.Group("/logs", func(c fiber.Ctx) error {
 		c.Locals(constants.UserLogWriterKey, userLogWriter)
 		return c.Next()
 	})
 
-	logGroup.Get("/:count", handlers.LogsHandler)
+	handlers.RegisterStatus(v1)
+	handlers.RegisterStartStop(v1)
+	handlers.RegisterCommand(v1)
+	handlers.RegisterUpdate(v1)
+	handlers.RegisterSettings(v1)
+	handlers.RegisterPlugins(v1)
+	handlers.RegisterLogs(v1)
 
 	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 
@@ -227,6 +207,11 @@ func startApi(
 		if err := mapDir(app, "", dir, "web"); err != nil {
 			log.Fatal("failed to map web dir: ", err)
 		}
+
+		app.Get("/*", static.New("web/index.html", static.Config{
+			FS:     dir,
+			Browse: false,
+		}))
 	}
 
 	log.Fatal(app.Listen(":" + config.HttpPort))
@@ -244,15 +229,15 @@ func mapDir(router fiber.Router, path string, fs embed.FS, dir string) error {
 	}
 
 	for _, entry := range content {
-		epath := fmt.Sprintf("%v/%v", path, entry.Name())
+		ePath := fmt.Sprintf("%v/%v", path, entry.Name())
 		efPath := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			err := mapDir(router, epath, fs, efPath)
+			err := mapDir(router, ePath, fs, efPath)
 			if err != nil {
 				return fmt.Errorf("failed to map sub dir '%v': %w", entry, err)
 			}
 		} else {
-			router.Get(epath, static.New(efPath, static.Config{
+			router.Get(ePath, static.New(efPath, static.Config{
 				FS:     fs,
 				Browse: true,
 			}))

@@ -1,8 +1,47 @@
 # cs-server-manager
 
-## :warning: This project is under active development.<br/>:warning: Expect bugs and breaking changes
+### :warning: This project is under active development expect breaking changes
 
-## This project is designed to only run on Linux (for now).<br/>For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used.
+### This project is designed to only run on Linux (for now).<br/>For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used.
+
+---
+
+<br/>
+
+# Installation
+
+> To configure your installation see [Environment Variables](#environment-variables)
+
+## Docker (recommended):
+
+> [Docker Hub](https://hub.docker.com/r/phiis/cs-server-manager)
+
+### Run:
+
+```
+docker run -p 8080:8080 -p 27015:27015/udp -v cs-server-manager_volume:/data phiis/cs-server-manager:latest
+```
+
+### Compose:
+
+```
+services:
+  cs-server-manager:
+    image: phiis/cs-server-manager:latest
+    volumes:
+      - cs-server-manager_volume:/data
+    ports:
+      - 27015:27015/udp
+      - 8080:8080
+volumes:
+  cs-server-manager_volume:
+```
+
+## Binary:
+
+Download the binary from [releases](https://github.com/Phi-S/cs-server-manager/releases)
+
+Run with `./cs-server-manager`
 
 <br/>
 
@@ -125,17 +164,17 @@ npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentati
 > <br/>
 > It should be located in the same folder as the `cs-server-manager` binary or in the `backend` folder for development
 
-| KEY            | TYPE   | DEFAULT             | DESCRIPTION                                                                                                                           |
-| -------------- | ------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| IP             | string | current public IP   | This IP is returned with the status endpoint to generate the connection url.<br/>If no specified, the current public ip will be used. |
-| HTTP_PORT      | string | 8080                | The API / WebSocket port                                                                                                              |
-| CS_PORT        | string | 27015               | CS 2 server port. This port will be reported with the status endpoint to generate the connection URL                                  |
-| DATA_DIR       | string | /data               | The base data directory for all CS server files                                                                                       |
-| LOG_DIR        | string | {DATA_DIR}/logs     | Location of the CS server logs                                                                                                        |
-| SERVER_DIR     | string | {DATA_DIR}/server   | The CS 2 server directory.<br/>After installation this folder will be around 30 GB is size                                            |
-| STEAMCMD_DIR   | string | {DATA_DIR}/steamcmd | The steamcmd directory                                                                                                                |
-| ENABLE_WEB_UI  | bool   | true                | If set to true, the backend will host the WEB UI                                                                                      |
-| ENABLE_SWAGGER | bool   | true                | If set to true, the backend will host the swagger UI                                                                                  |
+| KEY            | TYPE   | DEFAULT                  | DESCRIPTION                                                                                                                           |
+| -------------- | ------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| IP             | string | current public IP        | This IP is returned with the status endpoint to generate the connection url.<br/>If no specified, the current public ip will be used. |
+| HTTP_PORT      | string | 8080                     | The API / WebSocket port                                                                                                              |
+| CS_PORT        | string | 27015                    | CS 2 server port. This port will be reported with the status endpoint to generate the connection URL                                  |
+| DATA_DIR       | string | {working directory}/data | The base data directory for all CS server files                                                                                       |
+| LOG_DIR        | string | {DATA_DIR}/logs          | Location of the CS server logs                                                                                                        |
+| SERVER_DIR     | string | {DATA_DIR}/server        | The CS 2 server directory.<br/>After installation this folder will be around 30 GB is size                                            |
+| STEAMCMD_DIR   | string | {DATA_DIR}/steamcmd      | The steamcmd directory                                                                                                                |
+| ENABLE_WEB_UI  | bool   | true                     | If set to true, the backend will host the WEB UI                                                                                      |
+| ENABLE_SWAGGER | bool   | true                     | If set to true, the backend will host the swagger UI                                                                                  |
 
 <br/>
 

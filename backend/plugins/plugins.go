@@ -5,7 +5,6 @@ import (
 	"cs-server-manager/download/unzip"
 	"cs-server-manager/event"
 	"cs-server-manager/gvalidator"
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -154,12 +153,12 @@ func (i *Instance) InstallPluginByName(pluginName string, versionName string) er
 
 	plugin, version, err := i.getPluginAndVersionByName(pluginName, versionName)
 	if err != nil {
-		return fmt.Errorf("Plugin not found in plugins list: %w", err)
+		return fmt.Errorf("plugin not found in plugins list: %w", err)
 	}
 
 	installedPlugins, err := i.GetInstalledPlugin()
 	if err != nil {
-		return fmt.Errorf("Failed to get installed plugin: %w", err)
+		return fmt.Errorf("failed to get installed plugin: %w", err)
 	}
 
 	if installedPlugins != nil {

@@ -4,12 +4,17 @@ import (
 	"cs-server-manager/constants"
 	"cs-server-manager/logwrt"
 	"fmt"
-	"github.com/gofiber/fiber/v3"
 	"strconv"
 	"strings"
+
+	"github.com/gofiber/fiber/v3"
 )
 
-// LogsHandler
+func RegisterLogs(r fiber.Router) {
+	r.Get("/logs/:count", logsHandler)
+}
+
+// logsHandler
 // @Summary				Get logs
 // @Tags         		logs
 // @Produce     		json
@@ -18,7 +23,7 @@ import (
 // @Failure				400  	{object}	handlers.ErrorResponse
 // @Failure				500  	{object}	handlers.ErrorResponse
 // @Router       		/logs/{count} [get]
-func LogsHandler(c fiber.Ctx) error {
+func logsHandler(c fiber.Ctx) error {
 	logWriter, err := GetFromLocals[*logwrt.LogWriter](c, constants.UserLogWriterKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)

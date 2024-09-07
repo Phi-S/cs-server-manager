@@ -1,10 +1,13 @@
 .fleet/
 .vscode/
 .idea
-dist
+
+backend/.env
+
 node_modules
 data/
 
+dist
 cs-server-manager
 backend/web/
-backend/.env
+backend/swagger-ui/

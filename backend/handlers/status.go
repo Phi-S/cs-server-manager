@@ -7,7 +7,11 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-// StatusHandler
+func RegisterStatus(r fiber.Router) {
+	r.Get("/status", statusHandler)
+}
+
+// statusHandler
 // @Summary      Get the current status of the server
 // @Tags         server
 // @Produce      json
@@ -15,7 +19,7 @@ import (
 // @Failure      400  {object}  handlers.ErrorResponse
 // @Failure      500  {object}  handlers.ErrorResponse
 // @Router       /status [get]
-func StatusHandler(c fiber.Ctx) error {
+func statusHandler(c fiber.Ctx) error {
 	statusInstance, err := GetFromLocals[*status.Status](c, constants.StatusKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)

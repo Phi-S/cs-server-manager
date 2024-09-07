@@ -18,7 +18,12 @@ type SettingsModel struct {
 
 var loginTokenVisibleCount = 4
 
-// GetSettingsHandler
+func RegisterSettings(r fiber.Router) {
+	r.Get("/settings", getSettingsHandler)
+	r.Post("/settings", updateSettingsHandler)
+}
+
+// getSettingsHandler
 // @Summary				Get the current settings
 // @Tags         		settings
 // @Produce      		json
@@ -26,7 +31,7 @@ var loginTokenVisibleCount = 4
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/settings [get]
-func GetSettingsHandler(c fiber.Ctx) error {
+func getSettingsHandler(c fiber.Ctx) error {
 	startParametersJsonFile, err := GetFromLocals[*start_parameters_json.Instance](c, constants.StartParametersJsonFileKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
@@ -57,7 +62,7 @@ func GetSettingsHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
-// UpdateSettingsHandler
+// updateSettingsHandler
 // @Summary					Update settings
 // @Tags         			settings
 // @Accept       			json
@@ -67,7 +72,7 @@ func GetSettingsHandler(c fiber.Ctx) error {
 // @Failure					400  {object}  handlers.ErrorResponse
 // @Failure					500  {object}  handlers.ErrorResponse
 // @Router       			/settings [post]
-func UpdateSettingsHandler(c fiber.Ctx) error {
+func updateSettingsHandler(c fiber.Ctx) error {
 	startParametersJsonFile, err := GetFromLocals[*start_parameters_json.Instance](c, constants.StartParametersJsonFileKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)

@@ -466,7 +466,7 @@ func TestInstall_CounterStrikeSharp(t *testing.T) {
 		t.Fatal("failed to validate new gameinfo.gi", err)
 	}
 
-	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
+	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod") == false {
 		t.Fatal("new gameinfo.gi is missing metamod_install line")
 	}
 
@@ -579,7 +579,7 @@ func TestInstall_Cs2PracticeMode(t *testing.T) {
 		t.Fatal("failed to validate new gameinfo.gi", err)
 	}
 
-	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") == false {
+	if strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod") == false {
 		t.Fatal("new gameinfo.gi is missing metamod_install line")
 	}
 

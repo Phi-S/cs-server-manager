@@ -16,7 +16,11 @@ type CommandResponse struct {
 	Output []string `json:"output"`
 }
 
-// SendCommandHandler
+func RegisterCommand(r fiber.Router) {
+	r.Post("/command", commandHandler)
+}
+
+// commandHandler
 // @Summary				Send game-server command
 // @Tags         		server
 // @Accept       		json
@@ -25,8 +29,8 @@ type CommandResponse struct {
 // @Success     		200  {object}  CommandResponse
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
-// @Router       		/send-command [post]
-func SendCommandHandler(c fiber.Ctx) error {
+// @Router       		/command [post]
+func commandHandler(c fiber.Ctx) error {
 	serverInstance, err := GetFromLocals[*server.Instance](c, constants.ServerInstanceKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)

@@ -26,14 +26,26 @@ RUN go build -v -o cs-server-manager
 
 ## building debian with dependencies
 FROM debian:12.6-slim
+EXPOSE 27015/udp
+EXPOSE 8080
+ENV DATA_DIR=/data/
+
 RUN set -x \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends --no-install-suggests \
-		ca-certificates \
-		lib32z1 \
-    && apt-get autoremove \
-    && apt-get clean \
-    && find /var/lib/apt/lists/ -type f -delete
+	ca-certificates \
+	lib32z1 \
+	# .NET dependencies for CounterStrikeSharp
+	libc6 \
+	libgcc-s1 \
+	libicu72 \
+	libssl3 \
+	libstdc++6 \
+	tzdata \
+	zlib1g \
+	&& apt-get autoremove \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend-builder /app/cs-server-manager .
 CMD ["/cs-server-manager"]

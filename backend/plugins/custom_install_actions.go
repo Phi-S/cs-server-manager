@@ -29,6 +29,8 @@ func executeCustomUninstallAction(csgoDir, pluginName string) error {
 	return nil
 }
 
+var metamodLine = "\t\t\tGame csgo/addons/metamod"
+
 func metamodInstall(gameinfoPath string) error {
 	if err := gvalidator.Instance().Var(gameinfoPath, "required,file"); err != nil {
 		return fmt.Errorf("gameinfo.gi path '%v' is not valid %w", gameinfoPath, err)
@@ -46,7 +48,7 @@ func metamodInstall(gameinfoPath string) error {
 		line := scanner.Text()
 		lines = append(lines, line)
 		if line == "\t\t\tGame_LowViolence\tcsgo_lv // Perfect World content override" {
-			lines = append(lines, "\t\t\tGame csgo/addons/metamod_install")
+			lines = append(lines, metamodLine)
 			lineAdded = true
 		}
 	}
@@ -87,8 +89,8 @@ func metamodInstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to validate new gameinfo.gi %w", err)
 	}
 
-	if !strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") {
-		return fmt.Errorf("new gameinfo.gi is missing metamod_install line")
+	if !strings.Contains(string(newGameinfoContent), metamodLine) {
+		return fmt.Errorf("new gameinfo.gi is missing metamod line")
 	}
 
 	return nil
@@ -104,13 +106,13 @@ func metamodUninstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to open gameinfo.gi '%v' %w", gameinfoPath, err)
 	}
 
-	lineRemove := false
+	lineRemoved := false
 	lines := make([]string, 0)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "\t\t\tGame csgo/addons/metamod_install" {
-			lineRemove = true
+		if line == metamodLine {
+			lineRemoved = true
 		} else {
 			lines = append(lines, line)
 		}
@@ -120,7 +122,7 @@ func metamodUninstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to read gameinfo.gi '%v' %w", gameinfoPath, err)
 	}
 
-	if !lineRemove {
+	if !lineRemoved {
 		return fmt.Errorf("failed to remove metamod line from gaminfo.gi")
 	}
 
@@ -152,8 +154,8 @@ func metamodUninstall(gameinfoPath string) error {
 		return fmt.Errorf("failed to validate new gameinfo.gi %w", err)
 	}
 
-	if !strings.Contains(string(newGameinfoContent), "Game csgo/addons/metamod_install") {
-		return fmt.Errorf("new gameinfo.gi is still containing metamod_install line after uninstall")
+	if !strings.Contains(string(newGameinfoContent), metamodLine) {
+		return fmt.Errorf("new gameinfo.gi is still containing metamod line after uninstall")
 	}
 
 	return nil

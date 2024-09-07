@@ -29,7 +29,13 @@ type PluginDependencyResponse struct {
 	Dependencies []PluginDependencyResponse `json:"dependencies"`
 }
 
-// GetPluginsHandler
+func RegisterPlugins(r fiber.Router) {
+	r.Get("/plugins", getPluginsHandler)
+	r.Post("/plugins", installPluginHandler)
+	r.Delete("/plugins", uninstallPluginHandler)
+}
+
+// getPluginsHandler
 // @Summary				Get all available plugins
 // @Tags         		plugins
 // @Produce      		json
@@ -37,7 +43,7 @@ type PluginDependencyResponse struct {
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/plugins [get]
-func GetPluginsHandler(c fiber.Ctx) error {
+func getPluginsHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, fmt.Errorf("failed to get plugins instance from context: %w", err))
@@ -100,7 +106,7 @@ type InstallPluginRequest struct {
 	Version string `json:"version"`
 }
 
-// InstallPluginHandler
+// installPluginHandler
 // @Summary				Install given plugin
 // @Tags         		plugins
 // @Param		 		plugin body InstallPluginRequest true "The plugin and version that should be installed"
@@ -109,7 +115,7 @@ type InstallPluginRequest struct {
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/plugins [post]
-func InstallPluginHandler(c fiber.Ctx) error {
+func installPluginHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)
@@ -152,14 +158,14 @@ func InstallPluginHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// UninstallPluginHandler
+// uninstallPluginHandler
 // @Summary				Uninstall the currently installed plugin
 // @Tags         		plugins
 // @Success     		200
 // @Failure				400  {object}  handlers.ErrorResponse
 // @Failure				500  {object}  handlers.ErrorResponse
 // @Router       		/plugins [delete]
-func UninstallPluginHandler(c fiber.Ctx) error {
+func uninstallPluginHandler(c fiber.Ctx) error {
 	pluginsInstance, err := GetFromLocals[*plugins.Instance](c, constants.PluginsKey)
 	if err != nil {
 		return NewInternalServerErrorWithInternal(c, err)

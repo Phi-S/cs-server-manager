@@ -8,6 +8,152 @@ Base URLs:
 
 * <a href="/api/v1">/api/v1</a>
 
+<h1 id="cs-server-manager-api-server">server</h1>
+
+## Send game-server command
+
+`POST /command`
+
+> Body parameter
+
+```json
+{
+  "command": "string"
+}
+```
+
+<h3 id="send-game-server-command-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|body|body|[handlers.CommandRequest](#schemahandlers.commandrequest)|true|This command will be executed on the game server|
+|» command|body|string|true|none|
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "output": [
+    "string"
+  ]
+}
+```
+
+<h3 id="send-game-server-command-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|[handlers.CommandResponse](#schemahandlers.commandresponse)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
+## Start the server
+
+`POST /start`
+
+Starts the server with the given start parameters
+
+> Body parameter
+
+```json
+{
+  "hostname": "string",
+  "max_players": 128,
+  "password": "string",
+  "start_map": "string",
+  "steam_login_token": "string"
+}
+```
+
+<h3 id="start-the-server-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|body|body|[handlers.StartBody](#schemahandlers.startbody)|false|You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.|
+|» hostname|body|string|false|none|
+|» max_players|body|integer|false|none|
+|» password|body|string|false|none|
+|» start_map|body|string|false|none|
+|» steam_login_token|body|string|false|none|
+
+> Example responses
+
+> 400 Response
+
+<h3 id="start-the-server-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|None|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
+## Get the current status of the server
+
+`GET /status`
+
+> Example responses
+
+> 200 Response
+
+```json
+{
+  "hostname": "string",
+  "ip": "string",
+  "is_game_server_installed": true,
+  "map": "string",
+  "max_player_count": 0,
+  "password": "string",
+  "player_count": 0,
+  "port": "string",
+  "state": "idle"
+}
+```
+
+<h3 id="get-the-current-status-of-the-server-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|[status.InternalStatus](#schemastatus.internalstatus)|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
+## Stop the server
+
+`POST /stop`
+
+Stops the server of if the server is not running, returns 200 OK
+
+> Example responses
+
+> 400 Response
+
+<h3 id="stop-the-server-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|None|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
 <h1 id="cs-server-manager-api-logs">logs</h1>
 
 ## Get logs
@@ -150,152 +296,6 @@ This operation does not require authentication
 > 400 Response
 
 <h3 id="uninstall-the-currently-installed-plugin-responses">Responses</h3>
-
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|None|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-
-<aside class="success">
-This operation does not require authentication
-</aside>
-
-<h1 id="cs-server-manager-api-server">server</h1>
-
-## Send game-server command
-
-`POST /send-command`
-
-> Body parameter
-
-```json
-{
-  "command": "string"
-}
-```
-
-<h3 id="send-game-server-command-parameters">Parameters</h3>
-
-|Name|In|Type|Required|Description|
-|---|---|---|---|---|
-|body|body|[handlers.CommandRequest](#schemahandlers.commandrequest)|true|This command will be executed on the game server|
-|» command|body|string|true|none|
-
-> Example responses
-
-> 200 Response
-
-```json
-{
-  "output": [
-    "string"
-  ]
-}
-```
-
-<h3 id="send-game-server-command-responses">Responses</h3>
-
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|[handlers.CommandResponse](#schemahandlers.commandresponse)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-
-<aside class="success">
-This operation does not require authentication
-</aside>
-
-## Start the server
-
-`POST /start`
-
-Starts the server with the given start parameters
-
-> Body parameter
-
-```json
-{
-  "hostname": "string",
-  "max_players": 128,
-  "password": "string",
-  "start_map": "string",
-  "steam_login_token": "string"
-}
-```
-
-<h3 id="start-the-server-parameters">Parameters</h3>
-
-|Name|In|Type|Required|Description|
-|---|---|---|---|---|
-|body|body|[handlers.StartBody](#schemahandlers.startbody)|false|You can provide no, all or only a few start parameters. The provided start parameters will overwrite the saved start parameters in the start-parameters.json file if the server started successfully.|
-|» hostname|body|string|false|none|
-|» max_players|body|integer|false|none|
-|» password|body|string|false|none|
-|» start_map|body|string|false|none|
-|» steam_login_token|body|string|false|none|
-
-> Example responses
-
-> 400 Response
-
-<h3 id="start-the-server-responses">Responses</h3>
-
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|None|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-
-<aside class="success">
-This operation does not require authentication
-</aside>
-
-## Get the current status of the server
-
-`GET /status`
-
-> Example responses
-
-> 200 Response
-
-```json
-{
-  "hostname": "string",
-  "ip": "string",
-  "is_game_server_installed": true,
-  "map": "string",
-  "max_player_count": 0,
-  "password": "string",
-  "player_count": 0,
-  "port": "string",
-  "state": "idle"
-}
-```
-
-<h3 id="get-the-current-status-of-the-server-responses">Responses</h3>
-
-|Status|Meaning|Description|Schema|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|[status.InternalStatus](#schemastatus.internalstatus)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
-
-<aside class="success">
-This operation does not require authentication
-</aside>
-
-## Stop the server
-
-`POST /stop`
-
-Stops the server of if the server is not running, returns 200 OK
-
-> Example responses
-
-> 400 Response
-
-<h3 id="stop-the-server-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
