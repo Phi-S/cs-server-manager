@@ -125,7 +125,7 @@ func GetConfig() (Config, error) {
 		return Config{}, fmt.Errorf("failed to get working directory: %w", err)
 	}
 	const dataDirKey = "DATA_DIR"
-	dataDir, err := getEnvWithDefaultValueIfEmpty(dataDirKey, "dirpath", workingDir)
+	dataDir, err := getEnvWithDefaultValueIfEmpty(dataDirKey, "dirpath", filepath.Join(workingDir, "data"))
 	if err != nil {
 		return Config{}, err
 	}
