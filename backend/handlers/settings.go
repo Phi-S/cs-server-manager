@@ -5,6 +5,7 @@ import (
 	"cs-server-manager/gvalidator"
 	"cs-server-manager/start_parameters_json"
 	"fmt"
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -13,7 +14,7 @@ type SettingsModel struct {
 	Password        string `json:"password" validate:"omitempty,alphanum,lte=32"`
 	StartMap        string `json:"start_map" validate:"required,printascii,lte=32"`
 	MaxPlayers      uint8  `json:"max_players" validate:"required,number,lte=128"`
-	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,eq=32"`
+	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,len=32"`
 }
 
 var loginTokenVisibleCount = 4
