@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import AlertHeader from "./components/AlertHeader.tsx";
 import AlertModal from "./components/AlertModal.tsx";
@@ -6,75 +5,8 @@ import NavBar from "./components/NavBar.tsx";
 import Server from "./components/Server.tsx";
 import AlertContextWrapper from "./contexts/AlertContext.tsx";
 import DefaultContextWrapper from "./contexts/DefaultContext.tsx";
-import { deleteCookie, getCookie, setCookie } from "./util.ts";
 
 export default function App() {
-  const navbarCollapseLimit = 992;
-  const navbarCollapsedCookieKey = "is_navbar_collapsed";
-  const [isNavbarCollapsedByUser, setIsNavbarCollapsedByUser] = useState<
-    boolean | undefined
-  >(navbarCollapsedCookie());
-  const [currentWidth, setCurrentWidth] = useState(window.innerWidth);
-
-  function navbarCollapsedCookie() {
-    const cookie = getCookie(navbarCollapsedCookieKey);
-    if (cookie !== undefined) {
-      if (cookie.toLowerCase() === "true") {
-        return true;
-      } else if (cookie.toLowerCase() === "false") {
-        return false;
-      } else {
-        deleteCookie(navbarCollapsedCookieKey);
-      }
-    }
-
-    return undefined;
-  }
-
-  useEffect(() => {
-    window.addEventListener("resize", () => {
-      const width = window.innerWidth;
-      setCurrentWidth(width);
-    });
-  });
-
-  function isNavbarCollapsedFinal(): boolean {
-    if (currentWidth < navbarCollapseLimit) {
-      if (isNavbarCollapsedByUser === false) {
-        return false;
-      }
-
-      if (isNavbarCollapsedByUser === true) {
-        setIsNavbarCollapsedByUser(undefined);
-      }
-
-      return true;
-    }
-
-    if (isNavbarCollapsedByUser === true) {
-      return true;
-    }
-
-    if (isNavbarCollapsedByUser === false) {
-      setIsNavbarCollapsedByUser(undefined);
-    }
-    return false;
-  }
-
-  function expandNavbar() {
-    setCookie(navbarCollapsedCookieKey, "false", 365);
-    setIsNavbarCollapsedByUser(false);
-  }
-
-  function collapseNavbar() {
-    setCookie(navbarCollapsedCookieKey, "true", 365);
-    setIsNavbarCollapsedByUser(true);
-  }
-
-  function getNavbarWidth(): string {
-    return isNavbarCollapsedFinal() ? "50px" : "150px";
-  }
-
   return (
     <div
       className="m-auto p-3 vh-100 vw-100 overflow-hidden"
@@ -85,7 +17,6 @@ export default function App() {
       <AlertContextWrapper>
         <AlertModal />
         <DefaultContextWrapper>
-          <AlertHeader />
           <div className="d-flex justify-content-center">
             <div
               className="w-100"
@@ -94,19 +25,13 @@ export default function App() {
               <Server />
             </div>
           </div>
-          <hr />
-          <div className="d-flex w-100 h-100">
-            <div className="pe-2" style={{ width: getNavbarWidth() }}>
-              <NavBar
-                isCollapsed={isNavbarCollapsedFinal()}
-                expandNavbar={expandNavbar}
-                collapseNavbar={collapseNavbar}
-              />
-            </div>
-            <div style={{ width: `calc(100% - ${getNavbarWidth()})` }}>
-              <Outlet />
-            </div>
-          </div>
+
+          <div className="mt-3" />
+          <NavBar />
+          <hr className="mt-1" />
+
+          <AlertHeader />
+          <Outlet />
         </DefaultContextWrapper>
       </AlertContextWrapper>
     </div>

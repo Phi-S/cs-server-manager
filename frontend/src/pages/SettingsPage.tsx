@@ -29,9 +29,9 @@ export default function SettingsPage() {
   return (
     <>
       <div className="w-100 d-flex justify-content-center">
-        <form className="w-100 mx-5" onSubmit={(e) => e.preventDefault()}>
-          <div className="form-group mb-3">
-            <label htmlFor="hostname">Hostname</label>
+        <form className="w-100" onSubmit={(e) => e.preventDefault()}>
+          <div className="input-group mb-3">
+            <span className="input-group-text">Hostname</span>
             <input
               v-model="settings.hostname"
               type="text"
@@ -46,13 +46,13 @@ export default function SettingsPage() {
               }}
             />
           </div>
-          <div className="form-group mb-3">
-            <label htmlFor="password">Server password</label>
+
+          <div className="input-group mb-3">
+            <span className="input-group-text">Server password</span>
             <input
               v-model="settings.password"
               type="text"
               className="form-control"
-              id="password"
               defaultValue={settings.password}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setSettings((s) => {
@@ -62,13 +62,12 @@ export default function SettingsPage() {
               }}
             />
           </div>
-          <div className="form-group mb-3">
-            <label htmlFor="startMap">Start map</label>
+          <div className="input-group mb-3">
+            <span className="input-group-text">Start map</span>
             <input
               v-model="settings.start_map"
               type="text"
               className="form-control"
-              id="startMap"
               aria-describedby="statMapHelp"
               defaultValue={settings.start_map}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -78,16 +77,15 @@ export default function SettingsPage() {
                 });
               }}
             />
-            <small id="StartMapHelp" className="form-text text-muted">
+            <small id="StartMapHelp" className="input-group text-muted">
               The map which is loaded when server starts
             </small>
           </div>
-          <div className="form-group mb-3">
-            <label htmlFor="maxPlayers">May Players</label>
+          <div className="input-group mb-3">
+            <span className="input-group-text">May Players</span>
             <input
               type="number"
               className="form-control"
-              id="maxPlayers"
               defaultValue={settings.max_players}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setSettings((s) => {
@@ -97,13 +95,12 @@ export default function SettingsPage() {
               }}
             />
           </div>
-          <div className="form-group mb-3">
-            <label htmlFor="steamLoginToken">Steam login token</label>
+          <div className="input-group mb-3">
+            <span className="input-group-text">Steam login token</span>
             <input
               v-model="settings.steam_login_token"
               type="text"
               className="form-control"
-              id="steamLoginToken"
               aria-describedby="steamLoginTokenHelp"
               defaultValue={settings.steam_login_token}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -113,10 +110,13 @@ export default function SettingsPage() {
                 });
               }}
             />
-            <small id="steamLoginTokenHelp" className="form-text text-muted">
-              You can generate a token{" "}
-              <a href="https://steamcommunity.com/dev/managegameservers">
-                Here
+            <small id="steamLoginTokenHelp" className="input-group text-muted">
+              You can generate a token
+              <a
+                href="https://steamcommunity.com/dev/managegameservers"
+                target="_blank"
+              >
+                here
               </a>
             </small>
           </div>

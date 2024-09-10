@@ -1,5 +1,6 @@
 import { ChangeEvent, useContext, useEffect, useState } from "react";
 import {
+  Dependency,
   getPlugins,
   installPlugin,
   PluginResp,
@@ -9,12 +10,11 @@ import { State } from "../api/server";
 import ConfirmModal from "../components/ConfirmModal";
 import Loading from "../components/Loading";
 import { DefaultContext } from "../contexts/DefaultContext";
-import { openInNewTab } from "../util";
 
 export default function PluginsPage() {
   const defaultContext = useContext(DefaultContext);
   const [selectedVersions, setSelectedVersions] = useState<Map<string, string>>(
-    new Map<string, string>()
+    new Map<string, string>(),
   );
   const [plugins, setPlugins] = useState<PluginResp[]>();
   const [confirm, setConfirm] = useState<
@@ -45,7 +45,7 @@ export default function PluginsPage() {
   function isPluginInstalled(
     plugins: PluginResp[],
     name: string,
-    version: string
+    version: string,
   ): boolean {
     for (const plugin of plugins) {
       if (plugin.name === name) {
@@ -106,9 +106,45 @@ export default function PluginsPage() {
     return version;
   }
 
+  function getDependencies(plugins: PluginResp[], pluginName: string) {
+    const currentSelectedVersion = getSelectedVersion(pluginName);
+    let result = "";
+    plugins.forEach((plugin) => {
+      if (plugin.name === pluginName) {
+        plugin.versions.forEach((version) => {
+          if (version.name === currentSelectedVersion) {
+            const allDeps = getAllDependencies(version.dependencies).join(", ");
+            result = allDeps;
+            return;
+          }
+        });
+      }
+    });
+
+    if (result.length > 0) {
+      return <span>Dependencies: {result}</span>;
+    }
+
+    return "";
+  }
+
+  function getAllDependencies(deps: Dependency[]): string[] {
+    if (deps === null) {
+      return [];
+    }
+
+    let result: string[] = [];
+    deps.forEach((dep) => {
+      result = [...result, `${dep.name}(${dep.version})`];
+      result = [...result, ...getAllDependencies(dep.dependencies)];
+    });
+
+    return result;
+  }
+
   function onSelectedVersionChanged(
     pluginName: string,
-    event: ChangeEvent<HTMLSelectElement>
+    event: ChangeEvent<HTMLSelectElement>,
   ) {
     setSelectedVersions((s) => s.set(pluginName, event.target.value));
   }
@@ -132,19 +168,20 @@ export default function PluginsPage() {
       <table className="table">
         <tbody>
           {plugins.map((plugin) => (
-            <tr key={plugin.url} className="row pb-4">
-              <td className="col-2 text-center">
-                <a
-                  className="link btn"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    openInNewTab(plugin.url);
-                  }}
-                >
+            <tr key={plugin.url} className="d-table-row">
+              <td className="col-2 fs-5 align-middle text-center">
+                <a className="link" href={plugin.url} target="_blank">
                   {plugin.name}
                 </a>
+                <br />
               </td>
-              <td className="col-6">{plugin.description}</td>
+              <td className="col-6">
+                {plugin.description}
+                <br />
+                <div className="small bg-info bg-opacity-25 text-center">
+                  {getDependencies(plugins, plugin.name)}
+                </div>
+              </td>
               <td className="col-2">
                 <select
                   className="w-100 form-select"
@@ -161,7 +198,7 @@ export default function PluginsPage() {
                 {isPluginInstalled(
                   plugins,
                   plugin.name,
-                  getSelectedVersion(plugin.name)
+                  getSelectedVersion(plugin.name),
                 ) ? (
                   <button
                     className="btn btn-outline-info w-100"
@@ -178,7 +215,7 @@ export default function PluginsPage() {
                       install(
                         plugins,
                         plugin.name,
-                        getSelectedVersion(plugin.name)
+                        getSelectedVersion(plugin.name),
                       )
                     }
                   >

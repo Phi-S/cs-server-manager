@@ -1,8 +1,8 @@
 import moment from "moment";
 import { useContext } from "react";
 import { LogEntry } from "../api/server";
-import Loading from "./Loading";
 import { DefaultContext } from "../contexts/DefaultContext";
+import Loading from "./Loading";
 
 export default function Console() {
   const defaultContext = useContext(DefaultContext);
@@ -12,14 +12,14 @@ export default function Console() {
 
   function timestampString(timestampUtc: string): string {
     const offset = new Date().getTimezoneOffset();
-    return moment(timestampUtc).add(offset).format("HH:mm:ss");
+    return moment(timestampUtc).add(offset).format("yyyy.MM.DD HH:mm:ss");
   }
 
   function getLogBackgroundColor(log: LogEntry): string {
     if (log.log_type === "system_info") {
-      return "bg-success bg-opacity-75";
+      return "table-success bg-opacity-75";
     } else if (log.log_type === "system_error") {
-      return "bg-danger bg-opacity-75";
+      return "table-danger bg-opacity-75";
     } else {
       return "";
     }
@@ -27,7 +27,7 @@ export default function Console() {
 
   return (
     <>
-      <div className="overflow-x-scroll rounded-3 border border-2 h-100">
+      <div className="overflow-y-scroll rounded-3 border border-2 h-100">
         <table className="table table-sm table-striped">
           <tbody>
             {defaultContext.logs.map((log) => (

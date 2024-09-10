@@ -105,7 +105,7 @@ export default function ServerControls() {
 
         <div className="dropdown col-3">
           <button
-            className="btn btn-outline-info dropdown-toggle w-100 h-100"
+            className="btn btn-outline-info dropdown-toggle w-100 h-100 text-wrap"
             data-bs-toggle="dropdown"
             aria-expanded="false"
             disabled={defaultContext.status.state !== State.ServerStarted}
