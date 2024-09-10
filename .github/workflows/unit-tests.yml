@@ -5,26 +5,25 @@ name: unit-tests
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.22'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22"
 
-    - name: Build
-      working-directory: ./backend
-      run: go build -v ./...
+      - name: Build
+        working-directory: ./backend
+        run: go build -v ./...
 
-    - name: Test
-      working-directory: ./backend
-      run: go test -v ./...
+      - name: Test
+        working-directory: ./backend
+        run: go test -v ./...

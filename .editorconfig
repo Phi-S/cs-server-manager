@@ -1,0 +1,14 @@
+# Root EditorConfig file
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+
+[*.go]
+indent_style = tab
+indent_size = 1
+
+[{*.ts,*.js,*.tsx}]
+indent_style = space
+indent_size = 2

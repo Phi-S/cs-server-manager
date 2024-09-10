@@ -23,16 +23,16 @@ func New(path string, defaultIfNotExist server.StartParameters) (*Instance, erro
 		return nil, fmt.Errorf("path validation: %w", err)
 	}
 
-	if err := gvalidator.Instance().Struct(defaultIfNotExist); err != nil {
-		return nil, fmt.Errorf("defaultIfNoTExist validation: %w", err)
-	}
-
 	instance := Instance{
 		path: path,
 	}
 
 	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			if err := gvalidator.Instance().Struct(defaultIfNotExist); err != nil {
+				return nil, fmt.Errorf("defaultIfNoTExist validation: %w", err)
+			}
+
 			if err := instance.Write(defaultIfNotExist); err != nil {
 				return nil, fmt.Errorf("instance.Write(defaultIfNotExist): %w", err)
 			}
@@ -45,6 +45,9 @@ func New(path string, defaultIfNotExist server.StartParameters) (*Instance, erro
 }
 
 func (i *Instance) Read() (server.StartParameters, error) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
 	var startParameters server.StartParameters
 
 	content, err := os.ReadFile(i.path)
@@ -64,6 +67,9 @@ func (i *Instance) Read() (server.StartParameters, error) {
 }
 
 func (i *Instance) Write(startParameters server.StartParameters) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
 	if err := gvalidator.Instance().Struct(startParameters); err != nil {
 		return fmt.Errorf("startParameters validation: %w", err)
 	}

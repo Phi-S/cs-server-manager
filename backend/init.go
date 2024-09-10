@@ -139,13 +139,13 @@ func registerEvents(
 	// send status update via websocket
 	statusInstance.OnStatusChanged(func(p event.PayloadWithData[status.InternalStatus]) {
 		if err := webSocketServerInstance.Broadcast("status", p.Data); err != nil {
-			slog.Error("failed to send status message", "status", p.Data, "error", err)
+			slog.Error("after status changed: send status message", "status", p.Data, "error", err)
 		}
 	})
 
-	// update status if start parameters get changed (only applies if server is stopped / status gets updated on server start anyway)
 	startParametersJfileInstance.OnUpdated(func(data event.PayloadWithData[server.StartParameters]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			// update status if start parameters get changed (only applies if server is stopped / status gets updated on server start anyway)
 			if internalStatus.State == status.Idle {
 				internalStatus.Hostname = data.Data.Hostname
 				internalStatus.Map = data.Data.StartMap
@@ -157,48 +157,60 @@ func registerEvents(
 
 	serverInstance.OnStarting(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
+			ip, err := configInstance.GetCurrentIp()
+			if err != nil {
+				slog.Error("after starting: get current ip", "error", err)
+				ip = internalStatus.Ip
+			}
+
 			internalStatus.State = status.ServerStarting
+			internalStatus.Ip = ip
 		})
 	})
 
 	serverInstance.OnStarted(func(e event.PayloadWithData[server.StartParameters]) {
-		ip := configInstance.Ip
-		if !configInstance.UsedIpFromEnv() {
-			publicIp, err := config.GetPublicIp()
-			if err != nil {
-				slog.Error("failed to get public ip after server started", "error", err)
-			} else {
-				ip = publicIp
-			}
-		}
-
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.State = status.ServerStarted
 			internalStatus.Hostname = e.Data.Hostname
 			internalStatus.MaxPlayerCount = e.Data.MaxPlayers
 			internalStatus.Map = e.Data.StartMap
-			internalStatus.Ip = ip
+			internalStatus.Password = e.Data.Password
 		})
 	})
 
 	serverInstance.OnCrashed(func(p event.PayloadWithData[error]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.State = status.Idle
+
+			startParametersJson, err := startParametersJfileInstance.Read()
+			if err != nil {
+				slog.Error("after server crashed: read start parameters json", "error", err)
+				return
+			}
+
+			internalStatus.Hostname = startParametersJson.Hostname
+			internalStatus.MaxPlayerCount = startParametersJson.MaxPlayers
+			internalStatus.Map = startParametersJson.StartMap
+			internalStatus.Password = startParametersJson.Password
 		})
 	})
 
 	serverInstance.OnStopped(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
 			internalStatus.State = status.Idle
+
+			startParametersJson, err := startParametersJfileInstance.Read()
+			if err != nil {
+				slog.Error("after server stopped: read start parameters json", "error", err)
+				return
+			}
+
+			internalStatus.Hostname = startParametersJson.Hostname
+			internalStatus.MaxPlayerCount = startParametersJson.MaxPlayers
+			internalStatus.Map = startParametersJson.StartMap
+			internalStatus.Password = startParametersJson.Password
 		})
 	})
-
-	// TODO: detect update progress???
-	// steamcmd
-	//steamcmdInstance.OnOutput(func(p event.PayloadWithData[string]) {
-	//        fmt.Println(p.TriggeredAtUtc.String() + " | steamcmdInstance: " + p.Data)
-	//slog.Debug("steamcmdInstance", "event", "onOutput", "triggeredAtUtc", p.TriggeredAtUtc, "output", p.Data)
-	//})
 
 	steamcmdInstance.OnStarted(func(p event.DefaultPayload) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
@@ -211,7 +223,7 @@ func registerEvents(
 			internalStatus.State = status.Idle
 			isServerInstalled, err := isGameServerInstalled(configInstance.ServerDir)
 			if err != nil {
-				slog.Warn("after steamcmd finished, failed to check if game server is installed", "error", err)
+				slog.Warn("after steamcmd finished: check if game server is installed", "error", err)
 				return
 			}
 
@@ -225,12 +237,11 @@ func registerEvents(
 
 			isServerInstalled, err := isGameServerInstalled(configInstance.ServerDir)
 			if err != nil {
-				slog.Warn("after steamcmd go canceled, failed to check if game server is installed", "error", err)
+				slog.Warn("after steamcmd go canceled: check if game server is installed", "error", err)
 				return
 			}
 
 			internalStatus.IsGameServerInstalled = isServerInstalled
-
 		})
 	})
 
@@ -240,7 +251,7 @@ func registerEvents(
 
 			isServerInstalled, err := isGameServerInstalled(configInstance.ServerDir)
 			if err != nil {
-				slog.Warn("after steamcmd failed, failed to check if game server is installed", "error", err)
+				slog.Warn("after steamcmd failed: check if game server is installed", "error", err)
 				return
 			}
 

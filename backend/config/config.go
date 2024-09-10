@@ -26,11 +26,21 @@ type Config struct {
 	EnableWebUi   bool
 	EnableSwagger bool
 	Ip            string
-	usedEnvIp     bool
+	ipSetByEnvironmentVariable     bool
 }
 
-func (c Config) UsedIpFromEnv() bool {
-	return c.usedEnvIp
+func (c Config) GetCurrentIp() (string, error) {
+	// If the ip was set manually through the environment variable, always return the set ip
+	if c.ipSetByEnvironmentVariable {
+		return c.Ip, nil
+	}
+
+	publicIp, err := getPublicIp()
+	if err != nil {
+		return "", fmt.Errorf("get public ip: %w", err)
+	}
+
+	return publicIp, nil
 }
 
 var errEnvNotFound = errors.New("environment variable not found or empty")
@@ -70,7 +80,7 @@ func getEnvWithDefaultValueIfEmpty(key string, validationString string, defaultV
 	return v, nil
 }
 
-func GetPublicIp() (string, error) {
+func getPublicIp() (string, error) {
 	resp, err := http.Get("https://api.ipify.org/?format=text")
 	if err != nil {
 		return "", err
@@ -82,7 +92,7 @@ func GetPublicIp() (string, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body %w", err)
+		return "", fmt.Errorf("read response: %w", err)
 	}
 
 	return string(body), nil
@@ -96,13 +106,20 @@ func GetConfig() (Config, error) {
 
 	// IP
 	const ipKey = "IP"
-	publicIp, err := GetPublicIp()
+	ipSetByEnvironmentVariable := true
+	ip, err := getEnv(ipKey, "ip4_addr")
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to get public ip: %w", err)
-	}
-	ip, ipIsDefaultValue, err := getEnvWithDefaultValueIfEmptyAndIsDefaultIndicator(ipKey, "ip4_addr", publicIp)
-	if err != nil {
-		return Config{}, err
+		if errors.Is(err, errEnvNotFound) {
+			publicIp, err := getPublicIp()
+			if err != nil {
+				return Config{}, fmt.Errorf("failed to get public ip: %w", err)
+			}
+
+			ip = publicIp
+			ipSetByEnvironmentVariable = false
+		} else {
+			return Config{}, fmt.Errorf("validation of environment variable '%v' failed: %w", ipKey, err)
+		}
 	}
 
 	// HTTP_PORT
@@ -210,7 +227,7 @@ func GetConfig() (Config, error) {
 		enableWebUi,
 		enableSwagger,
 		ip,
-		!ipIsDefaultValue,
+		ipSetByEnvironmentVariable,
 	}
 
 	// Print
