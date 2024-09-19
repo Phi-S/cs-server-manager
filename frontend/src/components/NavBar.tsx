@@ -27,6 +27,12 @@ export default function NavBar() {
           Plugins
         </NavLink>
         <NavLink
+          to={"/configs"}
+          className={(isActive) => getActiveClass(isActive)}
+        >
+          Configs
+        </NavLink>
+        <NavLink
           to={"/about"}
           className={(isActive) => getActiveClass(isActive)}
         >

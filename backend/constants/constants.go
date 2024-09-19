@@ -35,3 +35,7 @@ const StatusKey statusKeyType = 0
 type pluginsKeyType uint
 
 const PluginsKey pluginsKeyType = 0
+
+type editorKeyType uint
+
+const EditorKey editorKeyType = 0

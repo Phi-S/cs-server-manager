@@ -56,6 +56,117 @@
                 }
             }
         },
+        "/files": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Get editable files",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.FilesResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/files/{file}": {
+            "get": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Get files content",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "file to get content for",
+                        "name": "file",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/files{file}": {
+            "patch": {
+                "tags": [
+                    "files"
+                ],
+                "summary": "Set files content",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "file to set content for",
+                        "name": "file",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/logs/{count}": {
             "get": {
                 "produces": [
@@ -446,6 +557,17 @@
                 },
                 "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "handlers.FilesResponse": {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

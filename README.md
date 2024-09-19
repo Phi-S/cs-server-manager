@@ -269,3 +269,49 @@ The `install_dir` field is the directory in which the downloaded content gets ex
 ]
 
 ```
+
+# Editor
+
+The endpoints `/files` or `/configs` in the WebUI can be used to edit local files (for example the server.cfg file).
+
+By default following files can be edited:
+
+- Files witch end with `.cfg` in `/game/csgo/cfg`
+- Files witch end with `.json` in `/game/csgo/addons/counterstrikesharp/configs`
+- Files witch end with `.json` or `.cfg` in `/game/csgo/addons/counterstrikesharp/plugins`
+
+Custom entries can be added by creating the file `editor-files.json` in the [DATA_DIR](#environment-variables)
+
+> If a `editor-files.json` file exist, the defaults will be overwritten
+
+> Files will only show if they exist
+
+Example content of `editor-files.json`:
+
+```
+[
+    {
+        "path": "/path/to/file.txt",
+        "extensions": null
+    },
+    {
+        "path": "/game/csgo/cfg",
+        "extensions": [
+            ".cfg"
+        ]
+    },
+    {
+        "path": "/game/csgo/addons/counterstrikesharp/configs",
+        "extensions": [
+            ".json"
+        ]
+    },
+    {
+        "path": "/game/csgo/addons/counterstrikesharp/plugins",
+        "extensions": [
+            ".json",
+            ".cfg"
+        ]
+    }
+]
+```

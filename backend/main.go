@@ -3,6 +3,7 @@ package main
 import (
 	"cs-server-manager/config"
 	"cs-server-manager/constants"
+	"cs-server-manager/editor"
 	"cs-server-manager/gvalidator"
 	"cs-server-manager/handlers"
 	"cs-server-manager/logwrt"
@@ -64,6 +65,7 @@ func main() {
 		webSocketServerInstance,
 		gameEventsInstance,
 		pluginsInstance,
+		editorInstance,
 		err := createRequiredServices(cfg)
 	if err != nil {
 		slog.Error("FATAL: failed to create required services", "error", err)
@@ -107,6 +109,7 @@ func main() {
 		userLogWriter,
 		webSocketServerInstance,
 		pluginsInstance,
+		editorInstance,
 	)
 }
 
@@ -135,6 +138,7 @@ func startApi(
 	userLogWriter *logwrt.LogWriter,
 	webSocketServer *WebSocketServer,
 	pluginsInstance *plugins.Instance,
+	editorInstance *editor.Instance,
 ) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
@@ -179,6 +183,7 @@ func startApi(
 		c.Locals(constants.StatusKey, status)
 		c.Locals(constants.PluginsKey, pluginsInstance)
 		c.Locals(constants.UserLogWriterKey, userLogWriter)
+		c.Locals(constants.EditorKey, editorInstance)
 		return c.Next()
 	})
 
@@ -189,6 +194,7 @@ func startApi(
 	handlers.RegisterSettings(v1)
 	handlers.RegisterPlugins(v1)
 	handlers.RegisterLogs(v1)
+	handlers.RegisterFiles(v1)
 
 	v1.Get("/ws", adaptor.HTTPHandler(websocket.Handler(webSocketServer.handleWs)))
 

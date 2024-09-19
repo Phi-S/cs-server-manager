@@ -26,12 +26,16 @@ export default function App() {
             </div>
           </div>
 
-          <div className="mt-3" />
-          <NavBar />
-          <hr className="mt-1" />
+          <div className="mt-3 mb-1" style={{ height: "30px" }}>
+            <NavBar />
+            <hr className="m-0" />
+          </div>
 
           <AlertHeader />
-          <Outlet />
+
+          <div style={{ height: "calc(100vh - 120px)" }}>
+            <Outlet />
+          </div>
         </DefaultContextWrapper>
       </AlertContextWrapper>
     </div>

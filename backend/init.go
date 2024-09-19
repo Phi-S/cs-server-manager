@@ -2,7 +2,9 @@ package main
 
 import (
 	"cs-server-manager/config"
+	"cs-server-manager/editor"
 	"cs-server-manager/event"
+	"cs-server-manager/files"
 	"cs-server-manager/game_events"
 	"cs-server-manager/gvalidator"
 	"cs-server-manager/logwrt"
@@ -47,39 +49,39 @@ func createRequiredServices(cfg config.Config) (
 	*WebSocketServer,
 	*game_events.Instance,
 	*plugins.Instance,
+	*editor.Instance,
 	error,
 ) {
-
 	steamcmdInstance, err := steamcmd.NewInstance(cfg.SteamcmdDir, cfg.ServerDir)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create steamcmd instance %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("create steamcmd instance: %w", err)
 	}
 
 	serverInstance, err := server.NewInstance(cfg.ServerDir, cfg.CsPort, cfg.SteamcmdDir)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create server instance %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("create server instance: %w", err)
 	}
 
 	startParametersJsonPath := filepath.Join(cfg.DataDir, "start-parameters.json")
 	startParametersJsonFile, err := start_parameters_json.New(startParametersJsonPath, *server.DefaultStartParameters())
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create new json file service for start-parameter.json %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("create start parameter json instance: %w", err)
 	}
 
 	logDir := filepath.Join(cfg.DataDir, "logs")
 	userLogWriter, err := logwrt.NewLogWriter(logDir, "user")
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create user log writer %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("create user log writer: %w", err)
 	}
 
 	startParameters, err := startParametersJsonFile.Read()
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to read start-parameters.json %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("read start-parameters.json: %w", err)
 	}
 
 	isGameServerInstalled, err := isGameServerInstalled(cfg.ServerDir)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to check if game server is installed: %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("check if game server is installed: %w", err)
 	}
 
 	statusInstance := status.NewStatus(
@@ -104,7 +106,13 @@ func createRequiredServices(cfg config.Config) (
 	}
 	pluginsInstance, err := plugins.New(csgoDir, pluginsJsonFilePath, installedPluginsJsonPath)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to create plugins instance %w", err)
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("create plugins instance: %w", err)
+	}
+
+	editorFilesJsonPath := filepath.Join(cfg.DataDir, "editor-files.json")
+	editorInstance, err := editor.New(editorFilesJsonPath, cfg.ServerDir)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, nil, nil, nil, fmt.Errorf("create editor instance: %w", err)
 	}
 
 	return steamcmdInstance,
@@ -115,6 +123,7 @@ func createRequiredServices(cfg config.Config) (
 		webSocketServer,
 		&gameEventsInstance,
 		pluginsInstance,
+		editorInstance,
 		nil
 }
 
@@ -321,7 +330,7 @@ func isGameServerInstalled(serverDir string) (bool, error) {
 		return false, nil
 	}
 
-	size, err := getFolderSize(serverDir)
+	size, err := files.GetDirSize(serverDir)
 	if err != nil {
 		return false, fmt.Errorf("failed to get serverDir '%v' size: %w", serverDir, err)
 	}
@@ -363,21 +372,4 @@ func isGameServerInstalled(serverDir string) (bool, error) {
 
 	return true, nil
 
-}
-
-func getFolderSize(p string) (int64, error) {
-	var size int64
-	err := filepath.Walk(p, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			size += info.Size()
-		}
-		return err
-	})
-	if err != nil {
-		return 0, fmt.Errorf("failed to get size of directory '%v': %w", p, err)
-	}
-	return size, nil
 }

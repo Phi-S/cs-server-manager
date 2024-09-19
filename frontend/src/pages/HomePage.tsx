@@ -11,7 +11,7 @@ export default function HomePage() {
       <div className="pb-1" style={{ height: "40px" }}>
         <SendCommand />
       </div>
-      <div style={{ height: "calc(100% - 200px)" }}>
+      <div style={{ height: "calc(100% - 100px)" }}>
         <Console />
       </div>
     </>

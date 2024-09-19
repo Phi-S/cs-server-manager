@@ -6,11 +6,12 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
+import AboutPage from "./pages/AboutPage.tsx";
+import ConfigPage from "./pages/ConfigPage.tsx";
 import HomePage from "./pages/HomePage.tsx";
 import NotFoundPage from "./pages/NotFoundPage.tsx";
 import PluginsPage from "./pages/PluginsPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
-import AboutPage from "./pages/AboutPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -19,20 +20,24 @@ const router = createBrowserRouter([
     errorElement: <NotFoundPage />,
     children: [
       {
-        path: "/",
+        index: true,
         element: <HomePage />,
       },
       {
-        path: "/settings",
+        path: "settings",
         element: <SettingsPage />,
       },
       {
-        path: "/plugins",
+        path: "plugins",
         element: <PluginsPage />,
       },
       {
-        path: "/about",
+        path: "about",
         element: <AboutPage />,
+      },
+      {
+        path: "configs",
+        element: <ConfigPage />,
       },
     ],
   },
@@ -41,5 +46,5 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RouterProvider router={router} />
-  </StrictMode>
+  </StrictMode>,
 );

@@ -41,7 +41,7 @@ export interface ErrorResponse {
 
 export async function SendWithoutResponse(
   path: string,
-  requestInit?: RequestInit
+  requestInit?: RequestInit,
 ): Promise<void> {
   try {
     const response = await fetch(`${GetApiUrl()}${path}`, requestInit);
@@ -51,7 +51,7 @@ export async function SendWithoutResponse(
         throw new ErrorResponseError(errorResponse);
       }
       throw new Error(
-        `Response failed with status code ${response.status} but no ErrorResponse returned`
+        `Response failed with status code ${response.status} but no ErrorResponse returned`,
       );
     }
   } catch (e) {
@@ -60,22 +60,30 @@ export async function SendWithoutResponse(
   }
 }
 
+export async function SendBase(
+  path: string,
+  requestInit?: RequestInit,
+): Promise<Response> {
+  const response = await fetch(`${GetApiUrl()}${path}`, requestInit);
+  if (!response.ok) {
+    const errorResponse = (await response.json()) as ErrorResponse;
+    if (isValidErrorResponse(errorResponse)) {
+      throw new ErrorResponseError(errorResponse);
+    }
+    throw new Error(
+      `Response failed with status code ${response.status} but no ErrorResponse returned`,
+    );
+  }
+
+  return response;
+}
+
 export async function Send<T>(
   path: string,
-  requestInit?: RequestInit
+  requestInit?: RequestInit,
 ): Promise<T> {
   try {
-    const response = await fetch(`${GetApiUrl()}${path}`, requestInit);
-    if (!response.ok) {
-      const errorResponse = (await response.json()) as ErrorResponse;
-      if (isValidErrorResponse(errorResponse)) {
-        throw new ErrorResponseError(errorResponse);
-      }
-      throw new Error(
-        `Response failed with status code ${response.status} but no ErrorResponse returned`
-      );
-    }
-
+    const response = await SendBase(path, requestInit);
     const respJson = (await response.json()) as T;
     if (respJson === undefined) {
       throw new Error("response json in undefined");
@@ -109,7 +117,7 @@ export async function PostJson<T>(path: string, body: any): Promise<T> {
 
 export async function PostJsonWithoutResponse(
   path: string,
-  body: any
+  body: any,
 ): Promise<void> {
   return await SendWithoutResponse(path, {
     method: "POST",

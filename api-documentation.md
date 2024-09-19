@@ -154,6 +154,103 @@ Stops the server of if the server is not running, returns 200 OK
 This operation does not require authentication
 </aside>
 
+<h1 id="cs-server-manager-api-files">files</h1>
+
+## Get editable files
+
+`GET /files`
+
+> Example responses
+
+> 200 Response
+
+```json
+[
+  {
+    "files": [
+      "string"
+    ]
+  }
+]
+```
+
+<h3 id="get-editable-files-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|Inline|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<h3 id="get-editable-files-responseschema">Response Schema</h3>
+
+Status Code **200**
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|*anonymous*|[[handlers.FilesResponse](#schemahandlers.filesresponse)]|false|none|none|
+|» files|[string]|false|none|none|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
+## Get files content
+
+`GET /files/{file}`
+
+<h3 id="get-files-content-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|file|path|string|true|file to get content for|
+
+> Example responses
+
+> 200 Response
+
+```
+"string"
+```
+
+<h3 id="get-files-content-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|string|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
+## Set files content
+
+`PATCH /files{file}`
+
+<h3 id="set-files-content-parameters">Parameters</h3>
+
+|Name|In|Type|Required|Description|
+|---|---|---|---|---|
+|file|path|string|true|file to set content for|
+
+> Example responses
+
+> 200 Response
+
+<h3 id="set-files-content-responses">Responses</h3>
+
+|Status|Meaning|Description|Schema|
+|---|---|---|---|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|ok|string|
+|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
+
+<aside class="success">
+This operation does not require authentication
+</aside>
+
 <h1 id="cs-server-manager-api-logs">logs</h1>
 
 ## Get logs
@@ -503,6 +600,28 @@ This operation does not require authentication
 |message|string|false|none|none|
 |request_id|string|false|none|none|
 |status|integer|false|none|none|
+
+<h2 id="tocS_handlers.FilesResponse">handlers.FilesResponse</h2>
+<!-- backwards compatibility -->
+<a id="schemahandlers.filesresponse"></a>
+<a id="schema_handlers.FilesResponse"></a>
+<a id="tocShandlers.filesresponse"></a>
+<a id="tocshandlers.filesresponse"></a>
+
+```json
+{
+  "files": [
+    "string"
+  ]
+}
+
+```
+
+### Properties
+
+|Name|Type|Required|Restrictions|Description|
+|---|---|---|---|---|
+|files|[string]|false|none|none|
 
 <h2 id="tocS_handlers.InstallPluginRequest">handlers.InstallPluginRequest</h2>
 <!-- backwards compatibility -->
