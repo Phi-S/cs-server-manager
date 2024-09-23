@@ -1,8 +1,9 @@
 package gvalidator_test
 
 import (
-	globalvalidator "cs-server-manager/gvalidator"
 	"testing"
+
+	globalvalidator "github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 func TestGlobalValidator_PortTag_Ok(t *testing.T) {

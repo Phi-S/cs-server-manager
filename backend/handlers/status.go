@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"cs-server-manager/constants"
-	"cs-server-manager/status"
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/Phi-S/cs-server-manager/status"
 
 	"github.com/gofiber/fiber/v3"
 )

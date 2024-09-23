@@ -1,7 +1,6 @@
 package config
 
 import (
-	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"io"
@@ -13,20 +12,22 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Phi-S/cs-server-manager/gvalidator"
+
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	HttpPort      string
-	CsPort        string
-	DataDir       string
-	LogDir        string
-	ServerDir     string
-	SteamcmdDir   string
-	EnableWebUi   bool
-	EnableSwagger bool
-	Ip            string
-	ipSetByEnvironmentVariable     bool
+	HttpPort                   string
+	CsPort                     string
+	DataDir                    string
+	LogDir                     string
+	ServerDir                  string
+	SteamcmdDir                string
+	EnableWebUi                bool
+	EnableSwagger              bool
+	Ip                         string
+	ipSetByEnvironmentVariable bool
 }
 
 func (c Config) GetCurrentIp() (string, error) {

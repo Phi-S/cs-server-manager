@@ -1,17 +1,6 @@
 package main
 
 import (
-	"cs-server-manager/config"
-	"cs-server-manager/constants"
-	"cs-server-manager/editor"
-	"cs-server-manager/gvalidator"
-	"cs-server-manager/handlers"
-	"cs-server-manager/logwrt"
-	"cs-server-manager/plugins"
-	"cs-server-manager/server"
-	"cs-server-manager/start_parameters_json"
-	"cs-server-manager/status"
-	"cs-server-manager/steamcmd"
 	"embed"
 	"errors"
 	"fmt"
@@ -21,6 +10,18 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/config"
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/Phi-S/cs-server-manager/editor"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
+	"github.com/Phi-S/cs-server-manager/handlers"
+	"github.com/Phi-S/cs-server-manager/logwrt"
+	"github.com/Phi-S/cs-server-manager/plugins"
+	"github.com/Phi-S/cs-server-manager/server"
+	"github.com/Phi-S/cs-server-manager/start_parameters_json"
+	"github.com/Phi-S/cs-server-manager/status"
+	"github.com/Phi-S/cs-server-manager/steamcmd"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
@@ -34,7 +35,7 @@ import (
 //go:embed web
 var dir embed.FS
 
-// @title cs-server-manager API
+// @title github.com/Phi-S/cs-server-manager API
 // @version 1.0
 // @schemes http https
 // @BasePath /api/v1

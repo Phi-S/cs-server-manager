@@ -1,15 +1,16 @@
 package main
 
 import (
-	"cs-server-manager/event"
-	"cs-server-manager/game_events"
-	"cs-server-manager/logwrt"
-	"cs-server-manager/plugins"
-	"cs-server-manager/server"
-	"cs-server-manager/steamcmd"
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/game_events"
+	"github.com/Phi-S/cs-server-manager/logwrt"
+	"github.com/Phi-S/cs-server-manager/plugins"
+	"github.com/Phi-S/cs-server-manager/server"
+	"github.com/Phi-S/cs-server-manager/steamcmd"
 )
 
 // Handles server and steamcmd events to log them to the console and log file.

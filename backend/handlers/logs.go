@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"cs-server-manager/constants"
-	"cs-server-manager/logwrt"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/Phi-S/cs-server-manager/logwrt"
 
 	"github.com/gofiber/fiber/v3"
 )

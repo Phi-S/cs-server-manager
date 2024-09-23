@@ -1,10 +1,11 @@
 package files
 
 import (
-	"cs-server-manager/gvalidator"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 type Entry struct {

@@ -1,14 +1,15 @@
 package server
 
 import (
-	"cs-server-manager/event"
-	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"sync"
 	"sync/atomic"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 var instanceCreated = false

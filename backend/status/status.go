@@ -1,9 +1,10 @@
 package status
 
 import (
-	"cs-server-manager/event"
 	"encoding/json"
 	"sync"
+
+	"github.com/Phi-S/cs-server-manager/event"
 
 	"github.com/google/uuid"
 )

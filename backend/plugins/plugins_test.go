@@ -1,13 +1,14 @@
 package plugins_test
 
 import (
-	"cs-server-manager/plugins"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/Phi-S/cs-server-manager/plugins"
 
 	"github.com/google/uuid"
 )

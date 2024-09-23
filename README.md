@@ -2,8 +2,6 @@
 
 ### :warning: This project is under active development expect breaking changes
 
-### This project is designed to only run on Linux (for now).<br/>For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used.
-
 ---
 
 <br/>
@@ -66,6 +64,8 @@ Default Swagger UI path: `/api/swagger/index.html`
 > This project is designed to only run on Linux (for now).<br/>
 > For development with Windows, [WSL2](https://learn.microsoft.com/windows/wsl/install) can be used
 
+> Before every commit please run `make ready`
+
 ## Prerequisites:
 
 - Go version [1.22 or higher](https://go.dev/doc/install)
@@ -82,58 +82,43 @@ git clone https://github.com/Phi-S/cs-server-manager.git
 cd cs-server-manager
 ```
 
-### Backend:
-
-```
-cd backend
-go mod download
-go run .
-```
+### Run
 
 > Status endpoint: [http://localhost:8080/api/v1/status](http://localhost:8080/api/v1/status) <br/>
 
-### Frontend:
+> WebUI: [http://localhost:8090](http://localhost:8090)
+
+#### backend only:
 
 ```
-cd frontend
-npm install
-npm run dev
+make backend
 ```
 
-> URL: [http://localhost:8090](http://localhost:8090)
+#### frontend only:
+
+```
+make frontend
+```
 
 <br/>
 
 # Build
 
-> All commands should be run from the root of this repo
-
 ### Binary:
 
 ```
-npm install --prefix frontend/
-npm run build --prefix frontend/
-
-cp -R frontend/dist/* backend/web
-
-swag init --dir backend -o . -ot json
-cp swagger-ui/* backend/swagger-ui
-cp swagger.json backend/swagger-ui/swagger.json
-
-go mod download -C backend/
-go build -C backend/ -v -o ../cs-server-manager
+make build
 ```
 
 ### Docker:
 
 ```
 docker build -t cs-server-manager .
-docker run -it --rm --name cs-server-manager --mount type=bind,source=/{INSTALLATION_DIRECTORY},destination=/data -p 8080:8080 -p 27015:27015 cs-server-manager
 ```
 
 ### Generate swagger docs with [swaggo/swag](https://github.com/swaggo/swag):
 
-> If the command `swag` was not found, add the following lines to your `.bashrc` and restart your terminal.
+> If the command `swag` was not found, add the following lines to your `.bashrc` and restart your terminal
 >
 > ```
 > export GOPATH="$HOME/go"
@@ -149,11 +134,10 @@ swag init --dir backend -o . -ot json
 
 ### Generate api-documentation.md with [widdershins](https://github.com/Mermade/widdershins):
 
-> Requires generated swagger docs
+> npm install widdershins@v4.0.0
 
 ```
-npm install widdershins@v4.0.0
-npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentation.md swagger.json
+make doc
 ```
 
 <br/>

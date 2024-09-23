@@ -2,11 +2,12 @@ package plugins
 
 import (
 	"bufio"
-	"cs-server-manager/gvalidator"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 func executeCustomInstallAction(csgoDir, pluginName string) error {

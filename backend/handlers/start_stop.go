@@ -1,13 +1,14 @@
 package handlers
 
 import (
-	"cs-server-manager/constants"
-	"cs-server-manager/gvalidator"
-	"cs-server-manager/start_parameters_json"
-	"cs-server-manager/status"
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
+	"github.com/Phi-S/cs-server-manager/start_parameters_json"
+	"github.com/Phi-S/cs-server-manager/status"
 
 	"github.com/gofiber/fiber/v3"
 )

@@ -1,14 +1,15 @@
 package main
 
 import (
-	"cs-server-manager/constants"
 	"errors"
 	"fmt"
-	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"log/slog"
 	"runtime/debug"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/requestid"
 )
 
 func logMiddleware(c fiber.Ctx) error {

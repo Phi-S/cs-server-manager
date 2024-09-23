@@ -1,14 +1,15 @@
 package editor
 
 import (
-	"cs-server-manager/files"
-	"cs-server-manager/gvalidator"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Phi-S/cs-server-manager/files"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 type FilesToEdit struct {

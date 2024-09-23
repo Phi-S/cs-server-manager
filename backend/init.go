@@ -1,23 +1,24 @@
 package main
 
 import (
-	"cs-server-manager/config"
-	"cs-server-manager/editor"
-	"cs-server-manager/event"
-	"cs-server-manager/files"
-	"cs-server-manager/game_events"
-	"cs-server-manager/gvalidator"
-	"cs-server-manager/logwrt"
-	"cs-server-manager/plugins"
-	"cs-server-manager/server"
-	"cs-server-manager/start_parameters_json"
-	"cs-server-manager/status"
-	"cs-server-manager/steamcmd"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Phi-S/cs-server-manager/config"
+	"github.com/Phi-S/cs-server-manager/editor"
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/files"
+	"github.com/Phi-S/cs-server-manager/game_events"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
+	"github.com/Phi-S/cs-server-manager/logwrt"
+	"github.com/Phi-S/cs-server-manager/plugins"
+	"github.com/Phi-S/cs-server-manager/server"
+	"github.com/Phi-S/cs-server-manager/start_parameters_json"
+	"github.com/Phi-S/cs-server-manager/status"
+	"github.com/Phi-S/cs-server-manager/steamcmd"
 )
 
 func createdRequiredDirs(cfg config.Config) error {

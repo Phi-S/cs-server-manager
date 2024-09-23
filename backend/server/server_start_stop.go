@@ -2,8 +2,6 @@ package server
 
 import (
 	"bufio"
-	"cs-server-manager/event"
-	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 func (s *Instance) copySteamclient() error {

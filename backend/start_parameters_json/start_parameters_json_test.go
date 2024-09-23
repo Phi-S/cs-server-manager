@@ -1,13 +1,14 @@
 package start_parameters_json_test
 
 import (
-	"cs-server-manager/server"
-	"cs-server-manager/start_parameters_json"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Phi-S/cs-server-manager/server"
+	"github.com/Phi-S/cs-server-manager/start_parameters_json"
+	"github.com/google/uuid"
 )
 
 func TestNew_createNewFile(t *testing.T) {

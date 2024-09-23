@@ -1,13 +1,14 @@
 package server
 
 import (
-	"cs-server-manager/event"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/event"
 
 	"github.com/google/uuid"
 )

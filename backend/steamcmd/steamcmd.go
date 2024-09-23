@@ -2,8 +2,6 @@ package steamcmd
 
 import (
 	"bufio"
-	"cs-server-manager/event"
-	"cs-server-manager/gvalidator"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,6 +12,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 
 	"github.com/creack/pty"
 )

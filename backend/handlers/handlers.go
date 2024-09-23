@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	"cs-server-manager/constants"
-	"cs-server-manager/server"
-	"cs-server-manager/steamcmd"
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/Phi-S/cs-server-manager/server"
+	"github.com/Phi-S/cs-server-manager/steamcmd"
 
 	"github.com/gofiber/fiber/v3"
 )

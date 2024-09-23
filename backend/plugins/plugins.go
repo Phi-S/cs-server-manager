@@ -1,10 +1,6 @@
 package plugins
 
 import (
-	"cs-server-manager/download"
-	"cs-server-manager/download/unzip"
-	"cs-server-manager/event"
-	"cs-server-manager/gvalidator"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +11,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Phi-S/cs-server-manager/download"
+	"github.com/Phi-S/cs-server-manager/download/unzip"
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
 )
 
 type Plugin struct {

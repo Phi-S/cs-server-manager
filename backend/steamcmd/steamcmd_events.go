@@ -1,6 +1,6 @@
 package steamcmd
 
-import "cs-server-manager/event"
+import "github.com/Phi-S/cs-server-manager/event"
 
 func (s *Instance) OnOutput(handler func(event.PayloadWithData[string])) {
 	s.onOutput.Register(handler)

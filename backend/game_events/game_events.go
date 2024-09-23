@@ -1,10 +1,11 @@
 package game_events
 
 import (
-	"cs-server-manager/event"
 	"log/slog"
 	"regexp"
 	"strconv"
+
+	"github.com/Phi-S/cs-server-manager/event"
 )
 
 type PlayerConnected struct {

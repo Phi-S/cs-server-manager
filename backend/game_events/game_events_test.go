@@ -1,9 +1,10 @@
 package game_events_test
 
 import (
-	"cs-server-manager/event"
-	"cs-server-manager/game_events"
 	"testing"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/game_events"
 )
 
 func TestDetectGameEvent_ChangeMap_Ok(t *testing.T) {

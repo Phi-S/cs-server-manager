@@ -1,6 +1,6 @@
 <!-- Generator: Widdershins v4.0.1 -->
 
-<h1 id="cs-server-manager-api">cs-server-manager API v1.0</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api">github.com/Phi-S/cs-server-manager API v1.0</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
@@ -8,7 +8,7 @@ Base URLs:
 
 * <a href="/api/v1">/api/v1</a>
 
-<h1 id="cs-server-manager-api-server">server</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api-server">server</h1>
 
 ## Send game-server command
 
@@ -154,7 +154,7 @@ Stops the server of if the server is not running, returns 200 OK
 This operation does not require authentication
 </aside>
 
-<h1 id="cs-server-manager-api-files">files</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api-files">files</h1>
 
 ## Get editable files
 
@@ -251,7 +251,7 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-<h1 id="cs-server-manager-api-logs">logs</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api-logs">logs</h1>
 
 ## Get logs
 
@@ -300,7 +300,7 @@ Status Code **200**
 This operation does not require authentication
 </aside>
 
-<h1 id="cs-server-manager-api-plugins">plugins</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api-plugins">plugins</h1>
 
 ## Get all available plugins
 
@@ -404,7 +404,7 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-<h1 id="cs-server-manager-api-settings">settings</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api-settings">settings</h1>
 
 ## Get the current settings
 
@@ -489,7 +489,7 @@ This operation does not require authentication
 This operation does not require authentication
 </aside>
 
-<h1 id="cs-server-manager-api-update">update</h1>
+<h1 id="github-com-phi-s-cs-server-manager-api-update">update</h1>
 
 ## Start server update
 

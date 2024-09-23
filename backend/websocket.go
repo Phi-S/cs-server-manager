@@ -1,13 +1,14 @@
 package main
 
 import (
-	"cs-server-manager/event"
-	"cs-server-manager/logwrt"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"sync"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/logwrt"
 
 	"golang.org/x/net/websocket"
 )

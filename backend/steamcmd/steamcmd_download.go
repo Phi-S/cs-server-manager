@@ -1,12 +1,13 @@
 package steamcmd
 
 import (
-	download "cs-server-manager/download/unzip"
 	"errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	download "github.com/Phi-S/cs-server-manager/download/unzip"
 )
 
 func IsSteamCmdInstalled(steamCmdPath string) bool {

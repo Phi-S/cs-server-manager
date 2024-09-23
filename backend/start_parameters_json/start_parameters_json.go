@@ -1,14 +1,15 @@
 package start_parameters_json
 
 import (
-	"cs-server-manager/event"
-	"cs-server-manager/gvalidator"
-	"cs-server-manager/server"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"sync"
+
+	"github.com/Phi-S/cs-server-manager/event"
+	"github.com/Phi-S/cs-server-manager/gvalidator"
+	"github.com/Phi-S/cs-server-manager/server"
 )
 
 type Instance struct {

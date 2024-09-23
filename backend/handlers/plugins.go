@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"cs-server-manager/constants"
-	"cs-server-manager/plugins"
 	"fmt"
+
+	"github.com/Phi-S/cs-server-manager/constants"
+	"github.com/Phi-S/cs-server-manager/plugins"
 
 	"github.com/gofiber/fiber/v3"
 )
