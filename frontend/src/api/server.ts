@@ -1,4 +1,4 @@
-import { Get, PostJson, PostWithoutResponse, SendBase } from "./api";
+import { Get, PostWithoutResponse, SendBase } from "./api";
 
 export enum State {
   Idle = "idle",

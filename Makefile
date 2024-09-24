@@ -7,7 +7,7 @@ doc:
 	swag init --dir backend -o . -ot json
 	npx widdershins -v --code --summary --expandBody --omitHeader -o api-documentation.md swagger.json
 
-ready: tidy test doc clear
+ready: tidy test doc build clear
 
 tidy:
 	go mod tidy -C backend/
