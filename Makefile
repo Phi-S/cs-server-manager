@@ -39,4 +39,4 @@ clear:
 	git restore --staged --worktree backend/swagger-ui/index.html
 	git restore --staged --worktree backend/web/index.html
 
-.PHONY: test doc ready tidy run backend frontend build clear
+.PHONY: test doc ready tidy backend frontend build clear

@@ -3,11 +3,13 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/Phi-S/cs-server-manager/constants"
 	"github.com/Phi-S/cs-server-manager/server"
 	"github.com/Phi-S/cs-server-manager/steamcmd"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -16,6 +18,32 @@ type ErrorResponse struct {
 	Status    int    `json:"status"`
 	Message   string `json:"message"`
 	RequestId string `json:"request_id"`
+}
+
+func NewErrorValidation(c fiber.Ctx, err error) error {
+	if _, ok := err.(*validator.InvalidValidationError); ok {
+		return NewInternalServerErrorWithInternal(c, err)
+	}
+
+	if _, ok := err.(validator.ValidationErrors); ok {
+		msg := ""
+		for _, valErr := range err.(validator.ValidationErrors) {
+			msg += fmt.Sprintf("Validation of '%v' failed on tag '%v'",
+				valErr.Field(),
+				valErr.ActualTag(),
+			)
+
+			if valErr.Param() != "" && valErr.ActualTag() != valErr.Param() {
+				msg += fmt.Sprintf(" %v", valErr.Param())
+			}
+			msg += "!\n"
+		}
+
+		msg, _ = strings.CutSuffix(msg, "\n")
+		return NewErrorWithInternal(c, fiber.StatusBadRequest, msg, err)
+	}
+
+	return NewInternalServerErrorWithInternal(c, err)
 }
 
 func NewErrorWithInternal(c fiber.Ctx, code int, message string, internalError error) error {

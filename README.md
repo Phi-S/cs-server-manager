@@ -80,6 +80,9 @@ Default Swagger UI path: `/api/swagger/index.html`
 ```
 git clone https://github.com/Phi-S/cs-server-manager.git
 cd cs-server-manager
+
+go get -C backend/
+npm install --prefix frontend/
 ```
 
 ### Run

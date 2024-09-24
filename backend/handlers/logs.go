@@ -15,7 +15,6 @@ func RegisterLogs(r fiber.Router) {
 	r.Get("/logs/:count", logsHandler)
 }
 
-// logsHandler
 // @Summary				Get logs
 // @Tags         		logs
 // @Produce     		json

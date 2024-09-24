@@ -9,7 +9,6 @@ func RegisterUpdate(r fiber.Router) {
 	r.Post("/update/cancel", cancelUpdateHandler)
 }
 
-// startUpdateHandler
 // @Summary				Start server update
 // @Tags         		update
 // @Success     		200
@@ -40,7 +39,6 @@ func startUpdateHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusAccepted)
 }
 
-// cancelUpdateHandler	CancelUpdate
 // @Summary				Cancel the server update
 // @Description 		Cancel the currently running server update or if no update is currently running, returns 200 OK
 // @Tags         		update

@@ -33,7 +33,7 @@ export default function App() {
 
           <AlertHeader />
 
-          <div style={{ height: "calc(100vh - 120px)" }}>
+          <div className="w-100 px-2" style={{ height: "calc(100vh - 120px)" }}>
             <Outlet />
           </div>
         </DefaultContextWrapper>

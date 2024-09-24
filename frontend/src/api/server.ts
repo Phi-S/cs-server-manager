@@ -1,8 +1,4 @@
-import { Get, PostJson, PostWithoutResponse } from "./api";
-
-export interface SendCommandResponse {
-  output: string[];
-}
+import { Get, PostJson, PostWithoutResponse, SendBase } from "./api";
 
 export enum State {
   Idle = "idle",
@@ -46,7 +42,10 @@ export async function restartServer() {
 }
 
 export async function sendCommandWithoutResponse(c: string) {
-  return PostJson<SendCommandResponse>(`/command`, { command: c });
+  return await SendBase("/command", {
+    method: "POST",
+    body: JSON.stringify({ command: c }),
+  });
 }
 
 export async function startUpdate() {

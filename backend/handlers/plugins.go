@@ -36,7 +36,6 @@ func RegisterPlugins(r fiber.Router) {
 	r.Delete("/plugins", uninstallPluginHandler)
 }
 
-// getPluginsHandler
 // @Summary				Get all available plugins
 // @Tags         		plugins
 // @Produce      		json
@@ -107,7 +106,6 @@ type InstallPluginRequest struct {
 	Version string `json:"version"`
 }
 
-// installPluginHandler
 // @Summary				Install given plugin
 // @Tags         		plugins
 // @Param		 		plugin body InstallPluginRequest true "The plugin and version that should be installed"
@@ -159,7 +157,6 @@ func installPluginHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// uninstallPluginHandler
 // @Summary				Uninstall the currently installed plugin
 // @Tags         		plugins
 // @Success     		200

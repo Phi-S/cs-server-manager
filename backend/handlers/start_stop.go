@@ -18,7 +18,7 @@ type StartBody struct {
 	Password        string `json:"password" validate:"omitempty,alphanum,lte=32"`
 	StartMap        string `json:"start_map" validate:"omitempty,printascii,lte=32"`
 	MaxPlayers      uint8  `json:"max_players" validate:"omitempty,number,lte=128"`
-	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,eq=32"`
+	SteamLoginToken string `json:"steam_login_token" validate:"omitempty,alphanum,len=32"`
 }
 
 func RegisterStartStop(r fiber.Router) {
@@ -26,7 +26,6 @@ func RegisterStartStop(r fiber.Router) {
 	r.Post("/stop", stopHandler)
 }
 
-// startHandler
 // @Summary      Start the server
 // @Description	 Starts the server with the given start parameters
 // @Tags         server
@@ -79,7 +78,7 @@ func startHandler(c fiber.Ctx) error {
 		}
 
 		if err := gvalidator.Instance().Struct(startBody); err != nil {
-			return NewErrorWithInternal(c, fiber.StatusBadRequest, "start parameters are not not valid", fmt.Errorf("gvalidator.Instance().Struct(startBody): %w", err))
+			return NewErrorValidation(c, err)
 		}
 
 		if hostname := strings.TrimSpace(startBody.Hostname); hostname != "" {
@@ -114,7 +113,6 @@ func startHandler(c fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-// stopHandler
 // @Summary 	Stop the server
 // @Description Stops the server of if the server is not running, returns 200 OK
 // @Tags        server

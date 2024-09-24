@@ -1,0 +1,116 @@
+@HOST = http://localhost:8080
+@PATH = /api/v1
+
+###
+### status
+###
+
+GET {{HOST}}{{PATH}}/status
+
+###
+### start / stop
+###
+
+POST {{HOST}}{{PATH}}/start
+
+###
+
+POST {{HOST}}{{PATH}}/start
+
+{
+    "hostname": "cs2 server name",
+	"password": "1",
+	"start_map": "de_mirage",
+	"max_players": 15,
+	"steam_login_token": ""
+}
+
+###
+
+POST {{HOST}}{{PATH}}/stop
+
+### 
+### command
+###
+
+POST {{HOST}}{{PATH}}/command
+
+{
+    "command": "status"
+}
+
+###
+### update
+###
+
+POST {{HOST}}{{PATH}}/update
+
+###
+
+POST {{HOST}}{{PATH}}/update/cancel
+
+###
+### settings
+###
+
+GET {{HOST}}{{PATH}}/settings
+
+###
+
+POST {{HOST}}{{PATH}}/settings
+
+{
+  "hostname": "cs server name",
+  "password": "12345",
+  "start_map": "de_mirage",
+  "max_players": 11,
+  "steam_login_token": ""
+}
+
+###
+### logs
+### 
+
+GET {{HOST}}{{PATH}}/logs/100
+
+###
+### plugins
+###
+
+GET {{HOST}}{{PATH}}/plugins
+
+###
+
+POST {{HOST}}{{PATH}}/plugins
+
+{
+    "name": "Cs2PracticeMode",
+    "version": "0.0.16"
+}
+
+###
+
+DELETE {{HOST}}{{PATH}}/plugins
+
+{
+    "name": "Cs2PracticeMode",
+    "version": "0.0.16"
+}
+
+###
+### files
+###
+
+GET {{HOST}}{{PATH}}/files
+
+###
+
+GET {{HOST}}{{PATH}}/files/%2Fgame%2Fcsgo%2Fcfg%2Fserver.cfg
+
+###
+
+PATCH {{HOST}}{{PATH}}/files/%2Fgame%2Fcsgo%2Fcfg%2Fserver.cfg
+
+test server cfg
+
+###

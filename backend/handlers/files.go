@@ -16,8 +16,6 @@ func RegisterFiles(r fiber.Router) {
 	r.Patch("/files/:file", setFileContent)
 }
 
-/// get all editable files
-
 type FilesResponse struct {
 	Files []string `json:"files"`
 }
@@ -48,8 +46,6 @@ func getAllEditableFilesHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-// Get file content
-
 // @Summary				Get files content
 // @Tags         		files
 // @Produce     		plain
@@ -68,7 +64,7 @@ func getFileContent(c fiber.Ctx) error {
 
 	err = gvalidator.Instance().Var(fileParam, "required,filepath")
 	if err != nil {
-		return NewErrorWithInternal(c, fiber.StatusBadRequest, "file parameter is not valid", err)
+		return NewErrorValidation(c, err)
 	}
 
 	editorInstance, err := GetFromLocals[*editor.Instance](c, constants.EditorKey)
@@ -84,12 +80,12 @@ func getFileContent(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).SendString(string(content))
 }
 
-// Set file content
-
 // @Summary				Set files content
 // @Tags         		files
-// @Param 				file	path		string true "file to set content for"
-// @Success     		200		{string}  	string "ok"
+// @Accept 				plain
+// @Param 				file 	path string true "file to set content for"
+// @Param				content body string true "file content"
+// @Success     		200
 // @Failure				400  	{object}	handlers.ErrorResponse
 // @Failure				500  	{object}	handlers.ErrorResponse
 // @Router       		/files{file} [PATCH]
@@ -102,7 +98,7 @@ func setFileContent(c fiber.Ctx) error {
 
 	err = gvalidator.Instance().Var(fileParam, "required,filepath")
 	if err != nil {
-		return NewErrorWithInternal(c, fiber.StatusBadRequest, "file parameter is not valid", err)
+		return NewErrorValidation(c, err)
 	}
 
 	editorInstance, err := GetFromLocals[*editor.Instance](c, constants.EditorKey)

@@ -67,35 +67,37 @@ export default function Server() {
   return (
     <>
       <div
-        className={`d-flex flex-row flex-nowrap justify-content-between rounded-2 w-100 h-100 px-2 ${getBackground(
-          defaultContext.status
+        className={`d-flex flex-row rounded-2 w-100 h-100 px-2 align-items-center justify-items-center ${getBackground(
+          defaultContext.status,
         )}`}
         title={`Current state: ${defaultContext.status.state}`}
       >
         <div
+          className="text-start text-truncate flex-grow-1 fs-3 black"
           onClick={() => navigateTo(getConnectionUrl(defaultContext.status!))}
-          className="d-flex w-100 btn align-items-center"
-          style={{ color: "black" }}
         >
-          <span className="col-8 text-start text-truncate fs-3">
-            {defaultContext.status.hostname}
-          </span>
-          <div className="col-4 d-none d-sm-block text-nowrap text-end">
-            <span className="pe-2 fs-5">{defaultContext.status.map}</span>[
-            <span className="fs-5">
-              {defaultContext.status.player_count} /{" "}
-              {defaultContext.status.max_player_count}]
-            </span>
-          </div>
+          {defaultContext.status.hostname}
         </div>
-        <div></div>
 
-        <div className="d-flex flex-row align-content-center">
+        <div
+          className="d-none d-sm-block text-nowrap text-end black ps-2"
+          onClick={() => navigateTo(getConnectionUrl(defaultContext.status!))}
+        >
+          <span className="pe-2 fs-5">{defaultContext.status.map}</span>[
+          <span className="fs-5">
+            {defaultContext.status.player_count} /{" "}
+            {defaultContext.status.max_player_count}]
+          </span>
+        </div>
+        <div className="px-2 h-100 ">
+          <div className="border-2 border-dark border-end black h-100"></div>
+        </div>
+        <div className="d-flex flex-nowrap black">
           <button
+            className="btn bi-copy p-0 pe-1 fs-2 black"
             onClick={() =>
               copyToClipboard(getConnectionString(defaultContext.status!))
             }
-            className="btn bi-copy p-0 fs-2 px-2 black"
           ></button>
           {getStartStopSpinner(defaultContext.status)}
         </div>

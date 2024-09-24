@@ -17,7 +17,7 @@
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "text/plain"
                 ],
                 "tags": [
                     "server"
@@ -38,7 +38,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.CommandResponse"
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -132,6 +132,9 @@
         },
         "/files{file}": {
             "patch": {
+                "consumes": [
+                    "text/plain"
+                ],
                 "tags": [
                     "files"
                 ],
@@ -143,14 +146,20 @@
                         "name": "file",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "file content",
+                        "name": "content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "ok",
-                        "schema": {
-                            "type": "string"
-                        }
+                        "description": "OK"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -532,17 +541,6 @@
             "properties": {
                 "command": {
                     "type": "string"
-                }
-            }
-        },
-        "handlers.CommandResponse": {
-            "type": "object",
-            "properties": {
-                "output": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

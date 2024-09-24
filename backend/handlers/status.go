@@ -11,7 +11,6 @@ func RegisterStatus(r fiber.Router) {
 	r.Get("/status", statusHandler)
 }
 
-// statusHandler
 // @Summary      Get the current status of the server
 // @Tags         server
 // @Produce      json

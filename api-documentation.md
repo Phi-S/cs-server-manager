@@ -33,19 +33,15 @@ Base URLs:
 
 > 200 Response
 
-```json
-{
-  "output": [
-    "string"
-  ]
-}
+```
+"string"
 ```
 
 <h3 id="send-game-server-command-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|[handlers.CommandResponse](#schemahandlers.commandresponse)|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|string|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 
@@ -229,21 +225,29 @@ This operation does not require authentication
 
 `PATCH /files{file}`
 
+> Body parameter
+
+```
+string
+
+```
+
 <h3 id="set-files-content-parameters">Parameters</h3>
 
 |Name|In|Type|Required|Description|
 |---|---|---|---|---|
 |file|path|string|true|file to set content for|
+|body|body|string|true|file content|
 
 > Example responses
 
-> 200 Response
+> 400 Response
 
 <h3 id="set-files-content-responses">Responses</h3>
 
 |Status|Meaning|Description|Schema|
 |---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|ok|string|
+|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|OK|None|
 |400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Bad Request|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 |500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal Server Error|[handlers.ErrorResponse](#schemahandlers.errorresponse)|
 
@@ -554,28 +558,6 @@ This operation does not require authentication
 |Name|Type|Required|Restrictions|Description|
 |---|---|---|---|---|
 |command|string|true|none|none|
-
-<h2 id="tocS_handlers.CommandResponse">handlers.CommandResponse</h2>
-<!-- backwards compatibility -->
-<a id="schemahandlers.commandresponse"></a>
-<a id="schema_handlers.CommandResponse"></a>
-<a id="tocShandlers.commandresponse"></a>
-<a id="tocshandlers.commandresponse"></a>
-
-```json
-{
-  "output": [
-    "string"
-  ]
-}
-
-```
-
-### Properties
-
-|Name|Type|Required|Restrictions|Description|
-|---|---|---|---|---|
-|output|[string]|false|none|none|
 
 <h2 id="tocS_handlers.ErrorResponse">handlers.ErrorResponse</h2>
 <!-- backwards compatibility -->

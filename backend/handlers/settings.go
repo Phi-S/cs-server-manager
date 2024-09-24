@@ -25,7 +25,6 @@ func RegisterSettings(r fiber.Router) {
 	r.Post("/settings", updateSettingsHandler)
 }
 
-// getSettingsHandler
 // @Summary				Get the current settings
 // @Tags         		settings
 // @Produce      		json
@@ -64,7 +63,6 @@ func getSettingsHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
-// updateSettingsHandler
 // @Summary					Update settings
 // @Tags         			settings
 // @Accept       			json
@@ -86,7 +84,7 @@ func updateSettingsHandler(c fiber.Ctx) error {
 	}
 
 	if err := gvalidator.Instance().Struct(sp); err != nil {
-		return NewErrorWithInternal(c, fiber.StatusBadRequest, "request body is not valid", err)
+		return NewErrorValidation(c, err)
 	}
 
 	startParameters, err := startParametersJsonFile.Read()
