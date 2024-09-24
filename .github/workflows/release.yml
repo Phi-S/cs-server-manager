@@ -64,7 +64,7 @@ jobs:
           echo "docker_latest=${{ secrets.DOCKER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY }}:latest" >> $GITHUB_OUTPUT
 
       - name: Build binary
-        run: sh build.sh
+        run: make build
 
       - name: Rename binary
         run: mv cs-server-manager ${{ steps.names.outputs.binary }}
