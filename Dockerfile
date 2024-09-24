@@ -8,7 +8,7 @@ RUN npm install
 RUN npm run build
 
 ## building backend
-FROM golang:1.22 AS backend-builder
+FROM golang:1.23 AS backend-builder
 WORKDIR /app
 
 RUN export GOPATH=$HOME/go
