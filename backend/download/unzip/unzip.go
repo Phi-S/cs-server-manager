@@ -63,16 +63,16 @@ func TarGz(gzFilePath, targetDir string) ([]string, error) {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(targetFilePath, 0755); err != nil {
+			if err := os.MkdirAll(targetFilePath, os.ModePerm); err != nil {
 				return nil, fmt.Errorf("failed to create new directory for targetFile %v %w", header.Name, err)
 			}
 		case tar.TypeReg:
 			targetDir := filepath.Dir(targetFilePath)
-			if err := os.MkdirAll(targetDir, 0755); err != nil {
+			if err := os.MkdirAll(targetDir, os.ModePerm); err != nil {
 				return nil, fmt.Errorf("failed to create new directory for targetFile %v %w", header.Name, err)
 			}
 
-			targetFile, err := os.OpenFile(targetFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+			targetFile, err := os.OpenFile(targetFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create result targetFile for %v %w", header.Name, err)
 			}

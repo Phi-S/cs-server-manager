@@ -24,6 +24,19 @@ func getCounterStrikeSharp() Plugin {
 					},
 				},
 			},
+			{
+				Name:        "v272",
+				DownloadURL: "https://github.com/roflmuffin/CounterStrikeSharp/releases/download/v272/counterstrikesharp-with-runtime-build-272-linux-e36d2e0.zip",
+				Dependencies: []PluginDependency{
+					{
+						Name:         "metamod_source",
+						InstallDir:   "/",
+						Version:      "2.0.0-git1314",
+						DownloadURL:  "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1314-linux.tar.gz",
+						Dependencies: nil,
+					},
+				},
+			},
 		},
 	}
 }
@@ -50,6 +63,27 @@ func getCs2PracticeMode() Plugin {
 								InstallDir:   "/",
 								Version:      "2.0.0-git1313",
 								DownloadURL:  "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1313-linux.tar.gz",
+								Dependencies: nil,
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:        "0.0.17",
+				DownloadURL: "https://github.com/Phi-S/cs2-practice-mode/releases/download/0.0.17/cs2-practice-mode-0.0.17.tar.gz",
+				Dependencies: []PluginDependency{
+					{
+						Name:        "CounterStrikeSharp",
+						Version:     "v272",
+						InstallDir:  "/",
+						DownloadURL: "https://github.com/roflmuffin/CounterStrikeSharp/releases/download/v272/counterstrikesharp-with-runtime-build-272-linux-e36d2e0.zip",
+						Dependencies: []PluginDependency{
+							{
+								Name:         "metamod_source",
+								InstallDir:   "/",
+								Version:      "2.0.0-git1314",
+								DownloadURL:  "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1314-linux.tar.gz",
 								Dependencies: nil,
 							},
 						},

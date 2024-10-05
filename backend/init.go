@@ -155,8 +155,11 @@ func registerEvents(
 
 	startParametersJfileInstance.OnUpdated(func(data event.PayloadWithData[server.StartParameters]) {
 		statusInstance.Update(func(internalStatus *status.InternalStatus) {
-			// update status if start parameters get changed (only applies if server is stopped / status gets updated on server start anyway)
-			if internalStatus.State == status.Idle {
+			// update status if start parameters are changed (only applies if server is stopped).
+			// The status always gets updated on successful server start
+			if internalStatus.State != status.ServerStarted &&
+				internalStatus.State != status.ServerStarting {
+
 				internalStatus.Hostname = data.Data.Hostname
 				internalStatus.Map = data.Data.StartMap
 				internalStatus.MaxPlayerCount = data.Data.MaxPlayers
